@@ -16,12 +16,13 @@ CREATE TABLE IF NOT EXISTS public.profiles (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS on profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can view own profile" ON public.profiles;
 CREATE POLICY "Users can view own profile" 
     ON public.profiles FOR SELECT USING (auth.uid() = id);
 
+DROP POLICY IF EXISTS "Users can update own profile" ON public.profiles;
 CREATE POLICY "Users can update own profile" 
     ON public.profiles FOR UPDATE USING (auth.uid() = id);
 
@@ -36,9 +37,9 @@ CREATE TABLE IF NOT EXISTS public.weight_logs (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Enable RLS on weight_logs
 ALTER TABLE public.weight_logs ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage weight logs" ON public.weight_logs;
 CREATE POLICY "Users can manage weight logs" 
     ON public.weight_logs FOR ALL USING (auth.uid() = user_id);
 
@@ -63,6 +64,8 @@ CREATE TABLE IF NOT EXISTS public.body_measurements (
 );
 
 ALTER TABLE public.body_measurements ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage body measurements" ON public.body_measurements;
 CREATE POLICY "Users can manage body measurements" 
     ON public.body_measurements FOR ALL USING (auth.uid() = user_id);
 
@@ -89,6 +92,8 @@ CREATE TABLE IF NOT EXISTS public.food_items (
 );
 
 ALTER TABLE public.food_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage food items" ON public.food_items;
 CREATE POLICY "Users can manage food items" 
     ON public.food_items FOR ALL USING (auth.uid() = user_id);
 
@@ -104,6 +109,8 @@ CREATE TABLE IF NOT EXISTS public.nutrition_logs (
 );
 
 ALTER TABLE public.nutrition_logs ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage nutrition logs" ON public.nutrition_logs;
 CREATE POLICY "Users can manage nutrition logs" 
     ON public.nutrition_logs FOR ALL USING (auth.uid() = user_id);
 
@@ -124,6 +131,8 @@ CREATE TABLE IF NOT EXISTS public.nutrition_log_items (
 );
 
 ALTER TABLE public.nutrition_log_items ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage nutrition log items" ON public.nutrition_log_items;
 CREATE POLICY "Users can manage nutrition log items" 
     ON public.nutrition_log_items FOR ALL USING (
         EXISTS (
@@ -149,6 +158,8 @@ CREATE TABLE IF NOT EXISTS public.workout_sessions (
 );
 
 ALTER TABLE public.workout_sessions ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage workout sessions" ON public.workout_sessions;
 CREATE POLICY "Users can manage workout sessions" 
     ON public.workout_sessions FOR ALL USING (auth.uid() = user_id);
 
@@ -178,6 +189,8 @@ CREATE TABLE IF NOT EXISTS public.daily_summaries (
 );
 
 ALTER TABLE public.daily_summaries ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Users can manage daily summaries" ON public.daily_summaries;
 CREATE POLICY "Users can manage daily summaries" 
     ON public.daily_summaries FOR ALL USING (auth.uid() = user_id);
 
