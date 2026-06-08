@@ -95,32 +95,6 @@ export default function SettingsPage() {
     mutationFn: async () => {
       // 1. Save Profile
       const updatedProfile = {
-  ...profile,
-  full_name: fullName,
-  date_of_birth: dateOfBirth,
-  starting_weight: parseFloat(startingWeight) || 80.0,
-  goal_weight: parseFloat(goalWeight) || 72.0,
-  height_cm: parseFloat(heightCm) || 175.0,
-  gender: gender as any,
-  activity_level: activityLevel as any,
-  diet_preference: dietPreference as any,
-  budget_preference: budgetPreference as any,
-  occupation: occupation,
-  fitness_experience: experience,
-  workout_days_limit: workoutDays,
-  workout_duration_limit: workoutDuration,
-  gym_access: gymAccess,
-  allergies: allergies || null,
-  foods_to_avoid: foodsToAvoid || null,
-  has_completed_onboarding: true,
-};
-        occupation: occupation,
-        fitness_experience: experience,
-        workout_days_limit: workoutDays,
-        workout_duration_limit: workoutDuration,
-        gym_access: gymAccess,
-        allergies: allergies || null,
-        foods_to_avoid: foodsToAvoid || null,
         ...profile,
         full_name: fullName,
         date_of_birth: dateOfBirth,
@@ -131,9 +105,16 @@ export default function SettingsPage() {
         activity_level: activityLevel as any,
         diet_preference: dietPreference as any,
         budget_preference: budgetPreference as any,
-        // New onboarding fields added above
-        has_completed_onboarding: true
+        occupation: occupation,
+        fitness_experience: experience,
+        workout_days_limit: workoutDays,
+        workout_duration_limit: workoutDuration,
+        gym_access: gymAccess,
+        allergies: allergies || null,
+        foods_to_avoid: foodsToAvoid || null,
+        has_completed_onboarding: true,
       };
+
       await trackerService.updateProfile(updatedProfile);
 
       // 2. Save Target Macros
@@ -163,7 +144,9 @@ export default function SettingsPage() {
           moderate: 1.55,
           very_active: 1.725,
           extra_active: 1.9
+ 
         };
+
         const multiplier = multipliers[activityLevel] || 1.375;
         const tdee = Math.round(bmr * multiplier);
 
