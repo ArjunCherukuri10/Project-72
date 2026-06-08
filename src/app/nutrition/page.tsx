@@ -3,12 +3,14 @@
 import { useState, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { trackerService } from "@/lib/services";
+import { calculateMacroTargets } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Plus, UtensilsCrossed, Calendar, Search, Trash2 } from "lucide-react";
+import type { Profile } from "@/types";
 
 function parseServingGrams(serving: string): number {
   const m = serving.match(/(\d+)\s*g/i);
@@ -80,7 +82,19 @@ export default function NutritionPage() {
     },
   });
 
-  const tgt = { cal: 1800, pro: 150, carb: 180, fat: 60, fib: 30 };
+  const { data: profile } = useQuery<Profile | null>({ queryKey: ["profile"], queryFn: trackerService.getProfile as any });
+
+  // Dynamic TDEE-based targets from profile
+  const tgt = useMemo(() => {
+    const weight = profile?.starting_weight || 85;
+    const height = profile?.height_cm || 175;
+    const age = profile?.date_of_birth
+      ? Math.floor((Date.now() - new Date(profile.date_of_birth).getTime()) / 31557600000)
+      : 25;
+    const gender = (profile?.gender === "female" ? "female" : "male") as "male" | "female";
+    const activity = profile?.activity_level || "moderate";
+    return calculateMacroTargets(weight, height, age, gender, activity);
+  }, [profile]);
   const cur = { cal: summary?.total_calories||0, pro: summary?.total_protein||0, carb: summary?.total_carbs||0, fat: summary?.total_fat||0, fib: summary?.total_fiber||0 };
 
   return (

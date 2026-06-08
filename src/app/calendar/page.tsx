@@ -12,7 +12,8 @@ import {
   isSameMonth,
   isToday,
   subMonths,
-  addMonths
+  addMonths,
+  getDay,
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Scale, Apple, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -83,6 +84,10 @@ export default function CalendarPage() {
 
             {/* Calendar Days */}
             <div className="grid grid-cols-7 gap-2">
+              {/* Empty cells for weekday offset */}
+              {Array.from({ length: getDay(monthStart) }).map((_, i) => (
+                <div key={`empty-${i}`} className="aspect-square" />
+              ))}
               {days.map((day) => {
                 const dateStr = format(day, "yyyy-MM-dd");
                 const summary = summaries.find((s) => s.date === dateStr);
