@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2, Plus, CheckCircle2, Flame, Droplet, Footprints, Moon, Smile, Zap } from "lucide-react";
 import { trackerService } from "@/lib/services";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 interface DailyCheckinModalProps {
   open: boolean;
@@ -73,47 +74,69 @@ export default function DailyCheckinModal({ open, onOpenChange, currentDateStr }
   }, [open, currentDateStr]);
 
   const handleSubmit = async () => {
-    setLoading(true);
-    // Mimic API delay
-    await new Promise((r) => setTimeout(r, 600));
+    try {
+      setLoading(true);
+      // Simulate API delay
+      await new Promise((r) => setTimeout(r, 600));
 
-    const wVal = parseFloat(weight) || null;
-    const cVal = parseInt(calories) || null;
-    const pVal = parseFloat(protein) || null;
-    const sVal = parseInt(steps) || null;
-    const slVal = parseFloat(sleep) || null;
+      const wVal = parseFloat(weight) || null;
+      const cVal = parseInt(calories) || null;
+      const pVal = parseFloat(protein) || null;
+      const sVal = parseInt(steps) || null;
+      const slVal = parseFloat(sleep) || null;
 
-    // Save weight log if weight changed
-    if (wVal) {
-      const logs = await trackerService.getWeightLogs();
-      const existing = logs.find((l) => l.date === currentDateStr);
-      if (!existing || existing.weight !== wVal) {
-        await trackerService.addWeightLog(wVal, currentDateStr, undefined, "Recorded via Daily Check-in");
+      // Save weight log if weight changed
+      if (wVal) {
+        const logs = await trackerService.getWeightLogs();
+        const existing = logs.find((l) => l.date === currentDateStr);
+        if (!existing || existing.weight !== wVal) {
+          await trackerService.addWeightLog(wVal, currentDateStr, undefined, "Recorded via Daily Check-in");
+        }
       }
+
+      // Build update payload only with provided values
+      const updatePayload: any = {};
+      if (wVal !== null) updatePayload.weight = wVal;
+      if (cVal !== null) updatePayload.total_calories = cVal;
+      if (pVal !== null) updatePayload.total_protein = pVal;
+      if (water) updatePayload.water_ml = water;
+      if (sVal !== null) updatePayload.steps = sVal;
+      if (slVal !== null) updatePayload.sleep_hours = slVal;
+      if (workoutCompleted !== undefined) updatePayload.workout_completed = workoutCompleted;
+      if (mood !== undefined) updatePayload.mood = mood;
+      if (energy !== undefined) updatePayload.energy_level = energy;
+      if (notes) updatePayload.notes = notes;
+
+      // Update Daily Summary / check-in
+      await trackerService.updateDailySummaryField(currentDateStr, updatePayload);
+
+      // Invalidate queries to refresh UI
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      queryClient.invalidateQueries({ queryKey: ["weightLogs"] });
+
+      setLoading(false);
+      setSuccess(true);
+      // Reset fields after successful log
+      setWeight("");
+      setCalories("");
+      setProtein("");
+      setWater(0);
+      setSteps("");
+      setSleep("");
+      setWorkoutCompleted(false);
+      setMood(3);
+      setEnergy(3);
+      setNotes("");
+
+      setTimeout(() => {
+        onOpenChange(false);
+        setSuccess(false);
+      }, 1000);
+    } catch (err) {
+      console.error("Check-in submission error:", err);
+      toast.error((err as any).message || "Failed to save check‑in");
+      setLoading(false);
     }
-
-    // Update Daily Summary / checkin
-    await trackerService.updateDailySummaryField(currentDateStr, {
-      weight: wVal,
-      total_calories: cVal,
-      total_protein: pVal,
-      water_ml: water,
-      steps: sVal,
-      sleep_hours: slVal,
-      workout_completed: workoutCompleted,
-      mood,
-      energy_level: energy,
-      notes: notes || null
-    });
-
-    queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
-    queryClient.invalidateQueries({ queryKey: ["weightLogs"] });
-
-    setLoading(false);
-    setSuccess(true);
-    setTimeout(() => {
-      onOpenChange(false);
-    }, 1000);
   };
 
   return (

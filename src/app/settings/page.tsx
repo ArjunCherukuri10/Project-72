@@ -39,6 +39,21 @@ export default function SettingsPage() {
   const [useCustomTargets, setUseCustomTargets] = useState(false);
   const [customCalories, setCustomCalories] = useState("");
   const [customProtein, setCustomProtein] = useState("");
+  // New onboarding profile fields
+  const [occupation, setOccupation] = useState("");
+  const [experience, setExperience] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [workoutDays, setWorkoutDays] = useState(4);
+  const [workoutDuration, setWorkoutDuration] = useState(45);
+  const [gymAccess, setGymAccess] = useState<"home" | "gym" | "both">("both");
+  const [allergies, setAllergies] = useState("");
+  const [foodsToAvoid, setFoodsToAvoid] = useState("");
+  // New nutrition target fields
+  const [customCarbs, setCustomCarbs] = useState("");
+  const [customFat, setCustomFat] = useState("");
+  const [customFiber, setCustomFiber] = useState("");
+  const [waterTarget, setWaterTarget] = useState("");
+  const [sleepTarget, setSleepTarget] = useState("");
+  const [stepsTarget, setStepsTarget] = useState("");
 
   // Sync state with loaded profile & target data
   useEffect(() => {
@@ -53,11 +68,25 @@ export default function SettingsPage() {
         setActivityLevel(profile.activity_level || "moderate");
         setDietPreference(profile.diet_preference || "non_vegetarian");
         setBudgetPreference(profile.budget_preference || "medium");
+        // New fields
+        setOccupation(profile.occupation || "");
+        setExperience(profile.fitness_experience || "beginner");
+        setWorkoutDays(profile.workout_days_limit || 4);
+        setWorkoutDuration(profile.workout_duration_limit || 45);
+        setGymAccess(profile.gym_access || "both");
+        setAllergies(profile.allergies || "");
+        setFoodsToAvoid(profile.foods_to_avoid || "");
       }
       if (targets) {
         setUseCustomTargets(!!(targets as any).use_custom_targets);
         setCustomCalories(targets.calories?.toString() || "2000");
         setCustomProtein(targets.protein?.toString() || "130");
+        setCustomCarbs(targets.carbs?.toString() || "");
+        setCustomFat(targets.fat?.toString() || "");
+        setCustomFiber(targets.fiber?.toString() || "");
+        setWaterTarget(targets.water_ml?.toString() || "2500");
+        setSleepTarget(targets.sleep_hours?.toString() || "7.5");
+        setStepsTarget(targets.steps?.toString() || "10000");
       }
     }, 0);
   }, [profile, targets]);
@@ -66,6 +95,32 @@ export default function SettingsPage() {
     mutationFn: async () => {
       // 1. Save Profile
       const updatedProfile = {
+  ...profile,
+  full_name: fullName,
+  date_of_birth: dateOfBirth,
+  starting_weight: parseFloat(startingWeight) || 80.0,
+  goal_weight: parseFloat(goalWeight) || 72.0,
+  height_cm: parseFloat(heightCm) || 175.0,
+  gender: gender as any,
+  activity_level: activityLevel as any,
+  diet_preference: dietPreference as any,
+  budget_preference: budgetPreference as any,
+  occupation: occupation,
+  fitness_experience: experience,
+  workout_days_limit: workoutDays,
+  workout_duration_limit: workoutDuration,
+  gym_access: gymAccess,
+  allergies: allergies || null,
+  foods_to_avoid: foodsToAvoid || null,
+  has_completed_onboarding: true,
+};
+        occupation: occupation,
+        fitness_experience: experience,
+        workout_days_limit: workoutDays,
+        workout_duration_limit: workoutDuration,
+        gym_access: gymAccess,
+        allergies: allergies || null,
+        foods_to_avoid: foodsToAvoid || null,
         ...profile,
         full_name: fullName,
         date_of_birth: dateOfBirth,
@@ -76,6 +131,7 @@ export default function SettingsPage() {
         activity_level: activityLevel as any,
         diet_preference: dietPreference as any,
         budget_preference: budgetPreference as any,
+        // New onboarding fields added above
         has_completed_onboarding: true
       };
       await trackerService.updateProfile(updatedProfile);
@@ -130,12 +186,12 @@ export default function SettingsPage() {
       await trackerService.updateNutritionTargets({
         calories: calorieGoal,
         protein: proteinGoal,
-        carbs: Math.round((calorieGoal * 0.45) / 4),
-        fat: Math.round((calorieGoal * 0.25) / 9),
-        fiber: 30,
-        water_ml: 2500,
-        sleep_hours: 7.5,
-        steps: 10000,
+        carbs: customCarbs ? parseInt(customCarbs) : Math.round((calorieGoal * 0.45) / 4),
+        fat: customFat ? parseInt(customFat) : Math.round((calorieGoal * 0.25) / 9),
+        fiber: customFiber ? parseInt(customFiber) : 30,
+        water_ml: parseInt(waterTarget) || 2500,
+        sleep_hours: parseFloat(sleepTarget) || 7.5,
+        steps: parseInt(stepsTarget) || 10000,
       } as any);
     },
     onSuccess: () => {
@@ -333,6 +389,186 @@ export default function SettingsPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+          {/* Additional Profile Details */}
+          <div className="border-t border-white/[0.04] pt-4 mt-4">
+            <h3 className="text-sm font-medium text-white mb-2">Additional Profile Details</h3>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="occupation">Occupation (Optional)</Label>
+                <Input
+                  id="occupation"
+                  placeholder="Software Engineer, Doctor, etc."
+                  value={occupation}
+                  onChange={(e) => setOccupation(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label>Fitness Experience</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["beginner", "intermediate", "advanced"] as const).map((lv) => (
+                    <Button
+                      key={lv}
+                      variant={experience === lv ? "default" : "outline"}
+                      className="capitalize text-xs rounded-xl"
+                      onClick={() => setExperience(lv)}
+                    >
+                      {lv}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="workoutDays">Workout Days / Week</Label>
+                <select
+                  id="workoutDays"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                  value={workoutDays}
+                  onChange={(e) => setWorkoutDays(parseInt(e.target.value) || 4)}
+                >
+                  {[1,2,3,4,5,6,7].map((d) => (
+                    <option key={d} value={d}>{d} Day{d > 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="workoutDuration">Workout Duration (mins)</Label>
+                <select
+                  id="workoutDuration"
+                  className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500"
+                  value={workoutDuration}
+                  onChange={(e) => setWorkoutDuration(parseInt(e.target.value) || 45)}
+                >
+                  {[30,45,60,90,120].map((m) => (
+                    <option key={m} value={m}>{m} mins</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label>Gym Access</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  {(["home", "gym", "both"] as const).map((eq) => (
+                    <Button
+                      key={eq}
+                      variant={gymAccess === eq ? "default" : "outline"}
+                      className="capitalize text-xs rounded-xl"
+                      onClick={() => setGymAccess(eq)}
+                    >
+                      {eq}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="allergies">Allergies (Optional)</Label>
+                <Input
+                  id="allergies"
+                  placeholder="e.g. peanuts, dairy"
+                  value={allergies}
+                  onChange={(e) => setAllergies(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="foodsToAvoid">Foods to Avoid (Optional)</Label>
+                <Input
+                  id="foodsToAvoid"
+                  placeholder="e.g. sugar, fast food"
+                  value={foodsToAvoid}
+                  onChange={(e) => setFoodsToAvoid(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+            </div>
+          </div>
+
+            {/* New Daily Targets Section */}
+            <div className="border-t border-white/[0.04] pt-4 mt-4">
+              <h3 className="text-sm font-medium text-white mb-2">Daily Activity Targets</h3>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1">
+                  <Label htmlFor="waterTarget">Water (ml)</Label>
+                  <Input
+                    id="waterTarget"
+                    type="number"
+                    value={waterTarget}
+                    onChange={(e) => setWaterTarget(e.target.value)}
+                    placeholder="2500"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="sleepTarget">Sleep (hrs)</Label>
+                  <Input
+                    id="sleepTarget"
+                    type="number"
+                    step="0.1"
+                    value={sleepTarget}
+                    onChange={(e) => setSleepTarget(e.target.value)}
+                    placeholder="7.5"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+                <div className="space-y-1 sm:col-span-2">
+                  <Label htmlFor="stepsTarget">Daily Steps</Label>
+                  <Input
+                    id="stepsTarget"
+                    type="number"
+                    value={stepsTarget}
+                    onChange={(e) => setStepsTarget(e.target.value)}
+                    placeholder="10000"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Extended Nutrition Targets */}
+            <div className="border-t border-white/[0.04] pt-4 mt-4">
+              <h3 className="text-sm font-medium text-white mb-2">Full Nutrition Targets (optional)</h3>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <div className="space-y-1">
+                  <Label htmlFor="customCarbs">Carbs (g)</Label>
+                  <Input
+                    id="customCarbs"
+                    type="number"
+                    value={customCarbs}
+                    onChange={(e) => setCustomCarbs(e.target.value)}
+                    placeholder="200"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="customFat">Fat (g)</Label>
+                  <Input
+                    id="customFat"
+                    type="number"
+                    value={customFat}
+                    onChange={(e) => setCustomFat(e.target.value)}
+                    placeholder="65"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="customFiber">Fiber (g)</Label>
+                  <Input
+                    id="customFiber"
+                    type="number"
+                    value={customFiber}
+                    onChange={(e) => setCustomFiber(e.target.value)}
+                    placeholder="30"
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+              </div>
             </div>
 
             <Button
