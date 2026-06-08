@@ -41,21 +41,23 @@ export default function SettingsPage() {
 
   // Sync state with loaded profile & target data
   useEffect(() => {
-    if (profile) {
-      setFullName(profile.full_name || "");
-      setStartingWeight(profile.starting_weight?.toString() || "");
-      setGoalWeight(profile.goal_weight?.toString() || "");
-      setHeightCm(profile.height_cm?.toString() || "");
-      setGender(profile.gender || "male");
-      setActivityLevel(profile.activity_level || "moderate");
-      setDietPreference(profile.diet_preference || "non_vegetarian");
-      setBudgetPreference(profile.budget_preference || "medium");
-    }
-    if (targets) {
-      setUseCustomTargets(!!(targets as any).use_custom_targets);
-      setCustomCalories(targets.calories?.toString() || "2000");
-      setCustomProtein(targets.protein?.toString() || "130");
-    }
+    setTimeout(() => {
+      if (profile) {
+        setFullName(profile.full_name || "");
+        setStartingWeight(profile.starting_weight?.toString() || "");
+        setGoalWeight(profile.goal_weight?.toString() || "");
+        setHeightCm(profile.height_cm?.toString() || "");
+        setGender(profile.gender || "male");
+        setActivityLevel(profile.activity_level || "moderate");
+        setDietPreference(profile.diet_preference || "non_vegetarian");
+        setBudgetPreference(profile.budget_preference || "medium");
+      }
+      if (targets) {
+        setUseCustomTargets(!!(targets as any).use_custom_targets);
+        setCustomCalories(targets.calories?.toString() || "2000");
+        setCustomProtein(targets.protein?.toString() || "130");
+      }
+    }, 0);
   }, [profile, targets]);
 
   const updateProfileMutation = useMutation({

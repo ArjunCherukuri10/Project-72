@@ -17,6 +17,7 @@ interface OnboardingWizardProps {
 export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const totalSteps = 7;
+  const [now] = useState(() => new Date()); // stable date reference for render-pure memoization
 
   // Step 1: Basic Profile
   const [fullName, setFullName] = useState("");
@@ -69,7 +70,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
     let timelineWeeks = 12; // default fallback
     if (targetDateStr) {
-      const days = Math.round((new Date(targetDateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      const days = Math.round((new Date(targetDateStr).getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
       timelineWeeks = Math.max(1, days / 7);
     }
 
@@ -89,7 +90,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
         ? `A target rate of ${weeklyRate.toFixed(1)}kg/week is high. A safe, sustainable rate is 0.5kg/week.`
         : null
     };
-  }, [weight, targetWeight, targetDateStr]);
+  }, [weight, targetWeight, targetDateStr, now]);
 
   // Target Calculator values
   const calculatedTargets = useMemo(() => {

@@ -17,6 +17,7 @@ export default function WeightPage() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [time, setTime] = useState("08:00");
   const [notes, setNotes] = useState("");
+  const [now] = useState(() => new Date()); // stable date reference for render-pure calculation
 
   const { data: logs = [] } = useQuery({
     queryKey: ["weightLogs"],
@@ -43,7 +44,7 @@ export default function WeightPage() {
   // Calculate rate of change
   const currentWeight = logs[0]?.weight || 94;
   const lastWeekWeight = logs.find(
-    (l) => new Date(l.date) <= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)
+    (l) => new Date(l.date) <= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
   )?.weight || 94;
   const weeklyChange = currentWeight - lastWeekWeight;
 

@@ -27,7 +27,11 @@ export function ThemeProvider({
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) as Theme | null;
-    if (stored) setTheme(stored);
+    if (stored) {
+      setTimeout(() => {
+        setTheme(stored);
+      }, 0);
+    }
   }, [storageKey]);
 
   useEffect(() => {

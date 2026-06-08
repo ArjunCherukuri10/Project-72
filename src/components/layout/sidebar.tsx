@@ -76,7 +76,11 @@ export function Sidebar() {
   const { sidebarOpen, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapse } =
     useAppStore();
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setTimeout(() => {
+      setMounted(true);
+    }, 0);
+  }, []);
 
   return (
     <TooltipProvider delayDuration={0}>

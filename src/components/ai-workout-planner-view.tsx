@@ -29,7 +29,9 @@ export default function AIWorkoutPlannerView() {
   useEffect(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const currentDay = days[new Date().getDay()];
-    setActiveDay(currentDay === "Sunday" ? "Monday" : currentDay); // default to Monday if Sunday rest
+    setTimeout(() => {
+      setActiveDay(currentDay === "Sunday" ? "Monday" : currentDay); // default to Monday if Sunday rest
+    }, 0);
   }, []);
 
   // Generate Workout Mutation
