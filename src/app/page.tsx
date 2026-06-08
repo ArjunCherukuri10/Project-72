@@ -4,7 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { trackerService } from "@/lib/services";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { formatNumber, calculateBMI, getBMICategory, estimateGoalDate } from "@/lib/utils";
+import { formatNumber, calculateBMI, getBMICategory, estimateGoalDate, calculateMacroTargets } from "@/lib/utils";
 import type { Profile } from "@/types";
 import {
   Scale,
@@ -29,6 +29,7 @@ import {
   BarChart,
   Bar
 } from "recharts";
+import { useMemo } from "react";
 
 export default function Dashboard() {
   const { data: profile } = useQuery<Profile | null>({
@@ -70,6 +71,18 @@ export default function Dashboard() {
   const todaySteps = todaySummary?.steps || 0;
   const todaySleep = todaySummary?.sleep_hours || 0;
   const compliance = todaySummary?.compliance_score || 0;
+
+  // Dynamic TDEE-based targets
+  const tgt = useMemo(() => {
+    const w = profile?.starting_weight || currentWeight || 80;
+    const h = profile?.height_cm || 175;
+    const age = profile?.date_of_birth
+      ? Math.floor((Date.now() - new Date(profile.date_of_birth).getTime()) / 31557600000)
+      : 25;
+    const g = (profile?.gender === "female" ? "female" : "male") as "male" | "female";
+    const act = profile?.activity_level || "moderate";
+    return calculateMacroTargets(w, h, age, g, act);
+  }, [profile, currentWeight]);
 
   // Chart data
   const weightChartData = [...weightLogs]
@@ -186,21 +199,21 @@ export default function Dashboard() {
             <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Apple className="h-5 w-5 text-amber-400" />
               <div className="text-xs text-white/40">Calories</div>
-              <div className="text-sm font-bold">{todayCalories} / 1800</div>
+              <div className="text-sm font-bold">{todayCalories} / {tgt.cal}</div>
             </CardContent>
           </Card>
           <Card className="bg-white/[0.02]">
             <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Flame className="h-5 w-5 text-red-400" />
               <div className="text-xs text-white/40">Protein</div>
-              <div className="text-sm font-bold">{todayProtein}g / 150g</div>
+              <div className="text-sm font-bold">{todayProtein}g / {tgt.pro}g</div>
             </CardContent>
           </Card>
           <Card className="bg-white/[0.02]">
             <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Scale className="h-5 w-5 text-emerald-400" />
               <div className="text-xs text-white/40">Fiber</div>
-              <div className="text-sm font-bold">{todayFiber}g / 30g</div>
+              <div className="text-sm font-bold">{todayFiber}g / {tgt.fib}g</div>
             </CardContent>
           </Card>
           <Card className="bg-white/[0.02]">

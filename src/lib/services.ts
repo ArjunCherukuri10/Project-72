@@ -25,48 +25,26 @@ const setStorageItem = <T>(key: string, value: T): void => {
   if (!isServer) localStorage.setItem(key, JSON.stringify(value));
 };
 
-// Seed initial data if empty
-const initMockData = () => {
+// Seed reference data only (food database + blank profile)
+const initReferenceData = () => {
   if (isServer) return;
 
-  const todayStr = format(new Date(), "yyyy-MM-dd");
-
-  // Profile / Config
+  // Blank profile — user fills in their own details in Settings
   if (!localStorage.getItem("p72_profile")) {
     setStorageItem("p72_profile", {
       id: "user-1",
-      email: "user@project72.com",
-      full_name: "Alex Mercer",
-      height_cm: 180,
-      starting_weight: 94,
-      goal_weight: 72,
+      email: "",
+      full_name: "",
+      height_cm: null,
+      starting_weight: null,
+      goal_weight: null,
+      date_of_birth: null,
+      gender: null,
+      activity_level: "moderate",
       units: "metric",
       theme: "dark",
       created_at: new Date().toISOString(),
     });
-  }
-
-  // Weight logs (simulating a path down from 94kg towards 72kg)
-  if (!localStorage.getItem("p72_weight_logs")) {
-    const weights: WeightLog[] = [];
-    const startVal = 94.0;
-    for (let i = 60; i >= 0; i--) {
-      const date = format(subDays(new Date(), i), "yyyy-MM-dd");
-      // Simulate gradual loss with some normal fluctuations
-      const factor = (60 - i) / 60;
-      const fluctuation = Math.sin(i * 0.5) * 0.4;
-      const weight = parseFloat((startVal - factor * 8.5 + fluctuation).toFixed(1));
-      weights.push({
-        id: `w-${i}`,
-        user_id: "user-1",
-        weight,
-        date,
-        time_recorded: "07:30",
-        notes: i === 60 ? "Starting my journey!" : "Consistent progress.",
-        created_at: new Date().toISOString(),
-      });
-    }
-    setStorageItem("p72_weight_logs", weights);
   }
 
   // Food Items — built-in nutrition database (values per 100g unless noted)
@@ -106,80 +84,10 @@ const initMockData = () => {
       f("f30","Dosa (Plain)","per 1 piece (80g)",120,2.7,18,3.7,0.6,"Grains"),
     ]);
   }
-
-  // Nutrition logs for today
-  if (!localStorage.getItem("p72_nutrition_logs")) {
-    const nutrition: NutritionLog[] = [
-      { id: "n1", user_id: "user-1", date: todayStr, meal_type: "breakfast", created_at: new Date().toISOString() }
-    ];
-    const nutritionItems = [
-      { id: "ni1", nutrition_log_id: "n1", food_item_id: "f2", servings: 3, calories: 234, protein: 18.9, carbs: 1.8, fat: 15.9, fiber: 0 }
-    ];
-    setStorageItem("p72_nutrition_logs", nutrition);
-    setStorageItem("p72_nutrition_log_items", nutritionItems);
-  }
-
-  // Habits Definitions
-  if (!localStorage.getItem("p72_habit_definitions")) {
-    const defaultHabits: HabitDefinition[] = [
-      { id: "h1", user_id: "user-1", name: "Workout", icon: "💪", color: "violet", target_frequency: "daily", is_active: true, sort_order: 1, created_at: new Date().toISOString() },
-      { id: "h2", user_id: "user-1", name: "10k Steps", icon: "🚶", color: "indigo", target_frequency: "daily", is_active: true, sort_order: 2, created_at: new Date().toISOString() },
-      { id: "h3", user_id: "user-1", name: "Protein Goal (150g)", icon: "🥩", color: "rose", target_frequency: "daily", is_active: true, sort_order: 3, created_at: new Date().toISOString() },
-      { id: "h4", user_id: "user-1", name: "Water Goal (3L)", icon: "💧", color: "sky", target_frequency: "daily", is_active: true, sort_order: 4, created_at: new Date().toISOString() },
-      { id: "h5", user_id: "user-1", name: "No Junk Food", icon: "🍔", color: "amber", target_frequency: "daily", is_active: true, sort_order: 5, created_at: new Date().toISOString() },
-    ];
-    setStorageItem("p72_habit_definitions", defaultHabits);
-  }
-
-  // Habits logs today
-  if (!localStorage.getItem("p72_habit_logs")) {
-    const defaultLogs: HabitLog[] = [
-      { id: "hl1", habit_id: "h2", user_id: "user-1", date: todayStr, completed: true, notes: null, created_at: new Date().toISOString() },
-      { id: "hl2", habit_id: "h4", user_id: "user-1", date: todayStr, completed: true, notes: null, created_at: new Date().toISOString() },
-    ];
-    setStorageItem("p72_habit_logs", defaultLogs);
-  }
-
-  // Daily Summaries — generate 30 days of history so charts work
-  if (!localStorage.getItem("p72_daily_summaries")) {
-    const daily: DailySummary[] = [];
-    for (let i = 30; i >= 0; i--) {
-      const d = format(subDays(new Date(), i), "yyyy-MM-dd");
-      const factor = (30 - i) / 30;
-      const w = parseFloat((90 - factor * 4.5 + Math.sin(i*0.7)*0.3).toFixed(1));
-      daily.push({
-        id: `ds-${d}`, user_id: "user-1", date: d, weight: w,
-        total_calories: Math.round(1500 + Math.random()*500),
-        total_protein: Math.round(100 + Math.random()*60),
-        total_carbs: Math.round(120 + Math.random()*80),
-        total_fat: Math.round(40 + Math.random()*30),
-        total_fiber: Math.round(15 + Math.random()*15),
-        water_ml: Math.round(2000 + Math.random()*1500),
-        steps: Math.round(6000 + Math.random()*8000),
-        sleep_hours: parseFloat((6 + Math.random()*2.5).toFixed(1)),
-        workout_completed: Math.random() > 0.3,
-        mood: Math.floor(3 + Math.random()*2),
-        notes: null,
-        compliance_score: Math.round(50 + Math.random()*45),
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    }
-    setStorageItem("p72_daily_summaries", daily);
-  }
-
-  // Goals
-  if (!localStorage.getItem("p72_goals")) {
-    const goals: Goal[] = [
-      { id: "g1", user_id: "user-1", category: "weight", title: "Target Weight 72kg", description: "Primary fat loss phase goal", target_value: 72, current_value: 85.5, unit: "kg", start_date: "2026-04-01", target_date: "2026-09-01", status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: "g2", user_id: "user-1", category: "nutrition", title: "Maintain Daily Deficit", description: "Keep calories under 1800", target_value: 1800, current_value: 1420, unit: "kcal", start_date: "2026-04-01", target_date: null, status: "active", created_at: new Date().toISOString(), updated_at: new Date().toISOString() }
-    ];
-    setStorageItem("p72_goals", goals);
-  }
 };
 
 // Execute init on load
-initMockData();
+initReferenceData();
 
 // Service APIs
 export const trackerService = {
