@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -74,6 +75,8 @@ export function Sidebar() {
   const pathname = usePathname();
   const { sidebarOpen, setSidebarOpen, sidebarCollapsed, toggleSidebarCollapse } =
     useAppStore();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -196,7 +199,7 @@ export function Sidebar() {
         </ScrollArea>
 
         {/* Sign Out Button */}
-        {typeof window !== "undefined" && (process.env.NEXT_PUBLIC_SUPABASE_URL || "").includes("placeholder") === false && (
+        {mounted && !(process.env.NEXT_PUBLIC_SUPABASE_URL || "").includes("placeholder") && (
           <div className="px-3 py-1 border-t border-white/[0.06]">
             <button
               onClick={async () => {
