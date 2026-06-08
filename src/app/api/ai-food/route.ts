@@ -56,7 +56,8 @@ export async function POST(request: NextRequest) {
               { role: "system", content: SYSTEM_PROMPT },
               { role: "user", content: `User says: "${description}"` }
             ],
-            response_format: { type: "json_object" }
+            response_format: { type: "json_object" },
+            max_tokens: 1000
           }),
         }
       );
