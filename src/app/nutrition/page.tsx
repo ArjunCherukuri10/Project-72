@@ -31,6 +31,9 @@ interface AIFoodItem {
   carbs: number;
   fat: number;
   fiber: number;
+  baseValue: number;
+  unit: string;
+  currentValue: number;
 }
 
 export default function NutritionPage() {
@@ -124,7 +127,21 @@ export default function NutritionPage() {
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "AI request failed");
-      setAiResults(data.items || []);
+
+      const parsed = (data.items || []).map((item: any) => {
+        const qtyStr = String(item.quantity || "1 serving");
+        const match = qtyStr.match(/^(\d+(?:\.\d+)?)/);
+        const baseValue = match ? parseFloat(match[1]) : 1;
+        const unit = qtyStr.replace(/^[\d\s.]+/, "").trim() || "serving";
+        return {
+          ...item,
+          baseValue,
+          unit,
+          currentValue: baseValue,
+        };
+      });
+
+      setAiResults(parsed);
     } catch (err: any) {
       toast.error(err.message || "Failed to analyze food");
     } finally {
@@ -132,16 +149,29 @@ export default function NutritionPage() {
     }
   };
 
+  const updateAIItemValue = (index: number, val: number) => {
+    setAiResults((prev) =>
+      prev.map((item, idx) => (idx === index ? { ...item, currentValue: val } : item))
+    );
+  };
+
   // Log a single AI result item
   const logAIItem = async (item: AIFoodItem) => {
     try {
+      const ratio = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+      const cal = Math.round(item.calories * ratio);
+      const pro = Math.round(item.protein * ratio * 10) / 10;
+      const carb = Math.round(item.carbs * ratio * 10) / 10;
+      const fat = Math.round(item.fat * ratio * 10) / 10;
+      const fib = Math.round(item.fiber * ratio * 10) / 10;
+
       trackerService.addMealItem(date, selectedMeal, `ai-${Date.now()}`, 1, {
-        calories: item.calories,
-        protein: item.protein,
-        carbs: item.carbs,
-        fat: item.fat,
-        fiber: item.fiber,
-        food: { name: `${item.name} (${item.quantity})` },
+        calories: cal,
+        protein: pro,
+        carbs: carb,
+        fat: fat,
+        fiber: fib,
+        food: { name: `${item.name} (${item.currentValue} ${item.unit})` },
       });
       queryClient.invalidateQueries({ queryKey: ["mealsToday", date] });
       queryClient.invalidateQueries({ queryKey: ["dailySummary", date] });
@@ -254,20 +284,34 @@ export default function NutritionPage() {
 
                 {/* AI Results */}
                 {aiResults.length > 0 && (
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
                       <Label className="text-xs font-bold text-white/50 uppercase">Detected Items</Label>
                       <span className="text-[10px] text-violet-400 font-mono">powered by Gemini</span>
                     </div>
                     {aiResults.map((item, idx) => {
-                      const totalCal = aiResults.reduce((s, i) => s + i.calories, 0);
-                      const totalPro = aiResults.reduce((s, i) => s + i.protein, 0);
+                      const ratio = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+                      const cal = Math.round(item.calories * ratio);
+                      const pro = Math.round(item.protein * ratio * 10) / 10;
+                      const carb = Math.round(item.carbs * ratio * 10) / 10;
+                      const fat = Math.round(item.fat * ratio * 10) / 10;
+                      const fib = Math.round(item.fiber * ratio * 10) / 10;
+
                       return (
-                        <div key={idx} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3 space-y-2">
-                          <div className="flex items-start justify-between">
-                            <div>
-                              <span className="font-semibold text-white text-sm">{item.name}</span>
-                              <span className="text-white/40 text-xs ml-2">{item.quantity}</span>
+                        <div key={idx} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3 space-y-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="flex-1">
+                              <span className="font-semibold text-white text-sm block">{item.name}</span>
+                              <div className="flex items-center gap-1.5 mt-2">
+                                <span className="text-[10px] text-white/40">Amount:</span>
+                                <Input
+                                  type="number"
+                                  value={item.currentValue}
+                                  onChange={(e) => updateAIItemValue(idx, parseFloat(e.target.value) || 0)}
+                                  className="w-16 h-7 text-xs px-1 text-center"
+                                />
+                                <span className="text-[10px] text-violet-400 font-medium">{item.unit}</span>
+                              </div>
                             </div>
                             <Button
                               variant="ghost"
@@ -279,11 +323,11 @@ export default function NutritionPage() {
                             </Button>
                           </div>
                           <div className="grid grid-cols-5 gap-1 text-center text-[10px]">
-                            <span className="p-1 rounded bg-amber-500/10 text-amber-400"><strong>{item.calories}</strong> kcal</span>
-                            <span className="p-1 rounded bg-pink-500/10 text-pink-400"><strong>{item.protein}g</strong> P</span>
-                            <span className="p-1 rounded bg-violet-500/10 text-violet-400"><strong>{item.carbs}g</strong> C</span>
-                            <span className="p-1 rounded bg-teal-500/10 text-teal-400"><strong>{item.fat}g</strong> F</span>
-                            <span className="p-1 rounded bg-emerald-500/10 text-emerald-400"><strong>{item.fiber}g</strong> Fb</span>
+                            <span className="p-1 rounded bg-amber-500/10 text-amber-400"><strong>{cal}</strong> kcal</span>
+                            <span className="p-1 rounded bg-pink-500/10 text-pink-400"><strong>{pro}g</strong> P</span>
+                            <span className="p-1 rounded bg-violet-500/10 text-violet-400"><strong>{carb}g</strong> C</span>
+                            <span className="p-1 rounded bg-teal-500/10 text-teal-400"><strong>{fat}g</strong> F</span>
+                            <span className="p-1 rounded bg-emerald-500/10 text-emerald-400"><strong>{fib}g</strong> Fb</span>
                           </div>
                         </div>
                       );
@@ -293,10 +337,30 @@ export default function NutritionPage() {
                     <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
                       <div className="flex items-center justify-between text-xs">
                         <div className="space-x-3">
-                          <span className="text-amber-400 font-bold">{aiResults.reduce((s,i)=>s+i.calories,0)} kcal</span>
-                          <span className="text-pink-400 font-bold">{aiResults.reduce((s,i)=>s+i.protein,0).toFixed(1)}g P</span>
-                          <span className="text-violet-400 font-bold">{aiResults.reduce((s,i)=>s+i.carbs,0).toFixed(1)}g C</span>
-                          <span className="text-teal-400 font-bold">{aiResults.reduce((s,i)=>s+i.fat,0).toFixed(1)}g F</span>
+                          <span className="text-amber-400 font-bold">
+                            {aiResults.reduce((s, item) => {
+                              const r = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+                              return s + Math.round(item.calories * r);
+                            }, 0)} kcal
+                          </span>
+                          <span className="text-pink-400 font-bold">
+                            {aiResults.reduce((s, item) => {
+                              const r = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+                              return s + Math.round(item.protein * r * 10) / 10;
+                            }, 0).toFixed(1)}g P
+                          </span>
+                          <span className="text-violet-400 font-bold">
+                            {aiResults.reduce((s, item) => {
+                              const r = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+                              return s + Math.round(item.carbs * r * 10) / 10;
+                            }, 0).toFixed(1)}g C
+                          </span>
+                          <span className="text-teal-400 font-bold">
+                            {aiResults.reduce((s, item) => {
+                              const r = item.baseValue > 0 ? item.currentValue / item.baseValue : 1;
+                              return s + Math.round(item.fat * r * 10) / 10;
+                            }, 0).toFixed(1)}g F
+                          </span>
                         </div>
                       </div>
                     </div>
