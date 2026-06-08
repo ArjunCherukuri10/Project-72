@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, UtensilsCrossed, Calendar, Search, Trash2 } from "lucide-react";
+import { Plus, UtensilsCrossed, Calendar, Search, Trash2, Sparkles, Loader2 } from "lucide-react";
 import type { Profile } from "@/types";
 
 function parseServingGrams(serving: string): number {
@@ -23,6 +23,16 @@ function parseServingGrams(serving: string): number {
 }
 function isCountable(s: string): boolean { return /per 1 (egg|piece|slice|scoop|white|tbsp)/i.test(s); }
 
+interface AIFoodItem {
+  name: string;
+  quantity: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+}
+
 export default function NutritionPage() {
   const queryClient = useQueryClient();
   const [selectedMeal, setSelectedMeal] = useState<"breakfast"|"lunch"|"dinner"|"snacks">("breakfast");
@@ -30,6 +40,12 @@ export default function NutritionPage() {
   const [selectedFoodId, setSelectedFoodId] = useState("");
   const [quantity, setQuantity] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+
+  // AI state
+  const [aiInput, setAiInput] = useState("");
+  const [aiResults, setAiResults] = useState<AIFoodItem[]>([]);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [mode, setMode] = useState<"manual" | "ai">("ai");
 
   const { data: foods = [] } = useQuery({ queryKey: ["foodItems"], queryFn: trackerService.getFoodItems });
   const { data: meals = [] } = useQuery({ queryKey: ["mealsToday", date], queryFn: () => trackerService.getNutritionLogsToday(date) });
@@ -48,24 +64,22 @@ export default function NutritionPage() {
     if (isCountable(selectedFood.serving_size)) {
       return { calories: Math.round(selectedFood.calories*qty), protein: Math.round(selectedFood.protein*qty*10)/10, carbs: Math.round(selectedFood.carbs*qty*10)/10, fat: Math.round(selectedFood.fat*qty*10)/10, fiber: Math.round(selectedFood.fiber*qty*10)/10 };
     }
-    const ratio = qty / parseServingGrams(selectedFood.serving_size);
+    const base = parseServingGrams(selectedFood.serving_size);
+    const ratio = qty / base;
     return { calories: Math.round(selectedFood.calories*ratio), protein: Math.round(selectedFood.protein*ratio*10)/10, carbs: Math.round(selectedFood.carbs*ratio*10)/10, fat: Math.round(selectedFood.fat*ratio*10)/10, fiber: Math.round(selectedFood.fiber*ratio*10)/10 };
   }, [selectedFood, quantity]);
 
   const logMealMutation = useMutation({
     mutationFn: async () => {
-      if (!selectedFoodId || !quantity) throw new Error("Select food and enter quantity");
-      const qty = parseFloat(quantity);
-      const countable = selectedFood ? isCountable(selectedFood.serving_size) : false;
-      const servings = countable ? qty : qty / parseServingGrams(selectedFood?.serving_size || "100g");
-      return trackerService.addMealItem(date, selectedMeal, selectedFoodId, servings);
+      if (!selectedFood || !calculated) throw new Error("Select a food and enter quantity");
+      return trackerService.addMealItem(date, selectedMeal, selectedFood.id, parseFloat(quantity));
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["mealsToday", date] });
       queryClient.invalidateQueries({ queryKey: ["dailySummary", date] });
       queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
       toast.success("Food logged!");
-      setQuantity(""); setSelectedFoodId(""); setFoodSearch("");
+      setSelectedFoodId(""); setFoodSearch(""); setQuantity("");
     },
     onError: (err: any) => toast.error(err.message),
   });
@@ -97,10 +111,61 @@ export default function NutritionPage() {
   }, [profile]);
   const cur = { cal: summary?.total_calories||0, pro: summary?.total_protein||0, carb: summary?.total_carbs||0, fat: summary?.total_fat||0, fib: summary?.total_fiber||0 };
 
+  // AI food search
+  const handleAISearch = async () => {
+    if (!aiInput.trim()) return;
+    setAiLoading(true);
+    setAiResults([]);
+    try {
+      const res = await fetch("/api/ai-food", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description: aiInput }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "AI request failed");
+      setAiResults(data.items || []);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to analyze food");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
+  // Log a single AI result item
+  const logAIItem = async (item: AIFoodItem) => {
+    try {
+      trackerService.addMealItem(date, selectedMeal, `ai-${Date.now()}`, 1, {
+        calories: item.calories,
+        protein: item.protein,
+        carbs: item.carbs,
+        fat: item.fat,
+        fiber: item.fiber,
+        food: { name: `${item.name} (${item.quantity})` },
+      });
+      queryClient.invalidateQueries({ queryKey: ["mealsToday", date] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummary", date] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success(`Logged: ${item.name}`);
+    } catch (err: any) {
+      toast.error(err.message);
+    }
+  };
+
+  // Log all AI items at once
+  const logAllAIItems = async () => {
+    for (const item of aiResults) {
+      await logAIItem(item);
+    }
+    setAiResults([]);
+    setAiInput("");
+    toast.success("All items logged!");
+  };
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div><h1 className="text-3xl font-bold tracking-tight">Nutrition Tracker</h1><p className="text-white/60">Search food → enter grams/count → log it.</p></div>
+        <div><h1 className="text-3xl font-bold tracking-tight">Nutrition Tracker</h1><p className="text-white/60">Describe what you ate or search the database.</p></div>
         <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-violet-400"/><Input type="date" value={date} onChange={(e)=>setDate(e.target.value)} className="w-40"/></div>
       </div>
 
@@ -120,7 +185,32 @@ export default function NutritionPage() {
       <div className="grid gap-6 md:grid-cols-3">
         {/* Log Meal Card */}
         <Card className="bg-white/[0.02]">
-          <CardHeader><CardTitle>Log Food</CardTitle><CardDescription>Search → quantity → log</CardDescription></CardHeader>
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              Log Food
+              <div className="flex gap-1">
+                <Button
+                  variant={mode === "ai" ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs rounded-lg"
+                  onClick={() => setMode("ai")}
+                >
+                  <Sparkles className="h-3 w-3 mr-1" /> AI
+                </Button>
+                <Button
+                  variant={mode === "manual" ? "default" : "outline"}
+                  size="sm"
+                  className="h-7 text-xs rounded-lg"
+                  onClick={() => setMode("manual")}
+                >
+                  <Search className="h-3 w-3 mr-1" /> Manual
+                </Button>
+              </div>
+            </CardTitle>
+            <CardDescription>
+              {mode === "ai" ? "Describe what you ate in plain language" : "Search → quantity → log"}
+            </CardDescription>
+          </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1">
               <Label>Meal</Label>
@@ -129,39 +219,134 @@ export default function NutritionPage() {
               </div>
             </div>
 
-            <div className="space-y-1">
-              <Label>Search Food</Label>
-              <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/30"/><Input placeholder="Type food name..." value={foodSearch} onChange={(e)=>{setFoodSearch(e.target.value);setSelectedFoodId("");}} className="pl-8"/></div>
-              {foodSearch && !selectedFoodId && (
-                <div className="max-h-40 overflow-y-auto rounded-xl border border-white/[0.06] bg-[#0a0a15] mt-1">
-                  {filteredFoods.slice(0,8).map((f)=>(
-                    <button key={f.id} onClick={()=>{setSelectedFoodId(f.id);setFoodSearch(f.name);}} className="w-full text-left px-3 py-2 text-sm hover:bg-violet-500/10 border-b border-white/[0.04] last:border-0">
-                      <span className="font-semibold">{f.name}</span><span className="text-white/40 ml-2 text-xs">{f.serving_size} · {f.calories} kcal</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {selectedFood && (
+            {mode === "ai" ? (
               <>
-                <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-xs">
-                  <span className="font-bold text-violet-400">{selectedFood.name}</span> — {selectedFood.serving_size}
+                {/* AI Natural Language Input */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-1.5">
+                    <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+                    Describe what you ate
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      placeholder='e.g. "soya chunks with curd and rice"'
+                      value={aiInput}
+                      onChange={(e) => setAiInput(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && handleAISearch()}
+                      className="pr-10"
+                    />
+                    {aiLoading && (
+                      <Loader2 className="absolute right-3 top-2.5 h-4 w-4 animate-spin text-violet-400" />
+                    )}
+                  </div>
+                  <Button
+                    className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500"
+                    onClick={handleAISearch}
+                    disabled={aiLoading || !aiInput.trim()}
+                  >
+                    {aiLoading ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Analyzing...</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4 mr-2" /> Analyze with Gemini AI</>
+                    )}
+                  </Button>
                 </div>
-                <div className="space-y-1">
-                  <Label>{isCountable(selectedFood.serving_size) ? "How many?" : "Grams"}</Label>
-                  <Input type="number" placeholder={isCountable(selectedFood.serving_size)?"e.g. 3":"e.g. 200"} value={quantity} onChange={(e)=>setQuantity(e.target.value)} autoFocus/>
-                </div>
-                {calculated && (
-                  <div className="text-xs grid grid-cols-3 gap-1 text-center">
-                    <span className="p-1 rounded bg-white/[0.03]"><strong className="text-amber-400">{calculated.calories}</strong> kcal</span>
-                    <span className="p-1 rounded bg-white/[0.03]"><strong className="text-pink-400">{calculated.protein}g</strong> pro</span>
-                    <span className="p-1 rounded bg-white/[0.03]"><strong className="text-teal-400">{calculated.fat}g</strong> fat</span>
+
+                {/* AI Results */}
+                {aiResults.length > 0 && (
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <Label className="text-xs font-bold text-white/50 uppercase">Detected Items</Label>
+                      <span className="text-[10px] text-violet-400 font-mono">powered by Gemini</span>
+                    </div>
+                    {aiResults.map((item, idx) => {
+                      const totalCal = aiResults.reduce((s, i) => s + i.calories, 0);
+                      const totalPro = aiResults.reduce((s, i) => s + i.protein, 0);
+                      return (
+                        <div key={idx} className="rounded-xl border border-white/[0.06] bg-white/[0.01] p-3 space-y-2">
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <span className="font-semibold text-white text-sm">{item.name}</span>
+                              <span className="text-white/40 text-xs ml-2">{item.quantity}</span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-violet-400"
+                              onClick={() => logAIItem(item)}
+                            >
+                              <Plus className="h-3 w-3 mr-1" /> Log
+                            </Button>
+                          </div>
+                          <div className="grid grid-cols-5 gap-1 text-center text-[10px]">
+                            <span className="p-1 rounded bg-amber-500/10 text-amber-400"><strong>{item.calories}</strong> kcal</span>
+                            <span className="p-1 rounded bg-pink-500/10 text-pink-400"><strong>{item.protein}g</strong> P</span>
+                            <span className="p-1 rounded bg-violet-500/10 text-violet-400"><strong>{item.carbs}g</strong> C</span>
+                            <span className="p-1 rounded bg-teal-500/10 text-teal-400"><strong>{item.fat}g</strong> F</span>
+                            <span className="p-1 rounded bg-emerald-500/10 text-emerald-400"><strong>{item.fiber}g</strong> Fb</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                    {/* Total summary + Log All */}
+                    <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3">
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="space-x-3">
+                          <span className="text-amber-400 font-bold">{aiResults.reduce((s,i)=>s+i.calories,0)} kcal</span>
+                          <span className="text-pink-400 font-bold">{aiResults.reduce((s,i)=>s+i.protein,0).toFixed(1)}g P</span>
+                          <span className="text-violet-400 font-bold">{aiResults.reduce((s,i)=>s+i.carbs,0).toFixed(1)}g C</span>
+                          <span className="text-teal-400 font-bold">{aiResults.reduce((s,i)=>s+i.fat,0).toFixed(1)}g F</span>
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      className="w-full"
+                      onClick={logAllAIItems}
+                    >
+                      <Plus className="h-4 w-4 mr-2" /> Log All {aiResults.length} Items to {selectedMeal}
+                    </Button>
                   </div>
                 )}
-                <Button className="w-full" onClick={()=>logMealMutation.mutate()} disabled={logMealMutation.isPending || !calculated}>
-                  <Plus className="h-4 w-4 mr-2"/> {logMealMutation.isPending ? "Logging..." : "Log Food"}
-                </Button>
+              </>
+            ) : (
+              <>
+                {/* Manual Food Search */}
+                <div className="space-y-1">
+                  <Label>Search Food</Label>
+                  <div className="relative"><Search className="absolute left-2.5 top-2.5 h-4 w-4 text-white/30"/><Input placeholder="Type food name..." value={foodSearch} onChange={(e)=>{setFoodSearch(e.target.value);setSelectedFoodId("");}} className="pl-8"/></div>
+                  {foodSearch && !selectedFoodId && (
+                    <div className="max-h-40 overflow-y-auto rounded-xl border border-white/[0.06] bg-[#0a0a15] mt-1">
+                      {filteredFoods.slice(0,8).map((f)=>(
+                        <button key={f.id} onClick={()=>{setSelectedFoodId(f.id);setFoodSearch(f.name);}} className="w-full text-left px-3 py-2 text-sm hover:bg-violet-500/10 border-b border-white/[0.04] last:border-0">
+                          <span className="font-semibold">{f.name}</span><span className="text-white/40 ml-2 text-xs">{f.serving_size} · {f.calories} kcal</span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {selectedFood && (
+                  <>
+                    <div className="p-2 rounded-lg bg-violet-500/10 border border-violet-500/20 text-xs">
+                      <span className="font-bold text-violet-400">{selectedFood.name}</span> — {selectedFood.serving_size}
+                    </div>
+                    <div className="space-y-1">
+                      <Label>{isCountable(selectedFood.serving_size) ? "How many?" : "Grams"}</Label>
+                      <Input type="number" placeholder={isCountable(selectedFood.serving_size)?"e.g. 3":"e.g. 200"} value={quantity} onChange={(e)=>setQuantity(e.target.value)} autoFocus/>
+                    </div>
+                    {calculated && (
+                      <div className="text-xs grid grid-cols-3 gap-1 text-center">
+                        <span className="p-1 rounded bg-white/[0.03]"><strong className="text-amber-400">{calculated.calories}</strong> kcal</span>
+                        <span className="p-1 rounded bg-white/[0.03]"><strong className="text-pink-400">{calculated.protein}g</strong> pro</span>
+                        <span className="p-1 rounded bg-white/[0.03]"><strong className="text-teal-400">{calculated.fat}g</strong> fat</span>
+                      </div>
+                    )}
+                    <Button className="w-full" onClick={()=>logMealMutation.mutate()} disabled={logMealMutation.isPending || !calculated}>
+                      <Plus className="h-4 w-4 mr-2"/> {logMealMutation.isPending ? "Logging..." : "Log Food"}
+                    </Button>
+                  </>
+                )}
               </>
             )}
           </CardContent>
@@ -170,7 +355,7 @@ export default function NutritionPage() {
         {/* Logged Meals */}
         <Card className="bg-white/[0.02] md:col-span-2">
           <CardHeader><CardTitle>Today&apos;s Meals</CardTitle><CardDescription>Logged food intake breakdown.</CardDescription></CardHeader>
-          <CardContent className="h-[360px] overflow-y-auto">
+          <CardContent className="h-[460px] overflow-y-auto">
             {meals.length > 0 ? (
               <div className="space-y-4">
                 {meals.map((meal:any)=>(

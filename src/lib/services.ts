@@ -161,18 +161,53 @@ export const trackerService = {
         .filter((item) => item.nutrition_log_id === l.id)
         .map((item) => {
           const food = foods.find((f) => f.id === item.food_item_id);
-          return { ...item, food };
+          return { ...item, food: food || item.food };
         });
       return { ...l, items };
     });
   },
-  addMealItem: (date: string, mealType: "breakfast" | "lunch" | "dinner" | "snacks", foodItemId: string, servings: number) => {
+  addMealItem: (
+    date: string,
+    mealType: "breakfast" | "lunch" | "dinner" | "snacks",
+    foodItemId: string,
+    servings: number,
+    customItem?: {
+      calories: number;
+      protein: number;
+      carbs: number;
+      fat: number;
+      fiber: number;
+      food?: { name: string };
+    }
+  ) => {
     const logs = getStorageItem<NutritionLog[]>("p72_nutrition_logs", []);
     const logItems = getStorageItem<any[]>("p72_nutrition_log_items", []);
-    const foods = trackerService.getFoodItems();
 
-    const food = foods.find((f) => f.id === foodItemId);
-    if (!food) return;
+    let foodName = "";
+    let calories = 0;
+    let protein = 0;
+    let carbs = 0;
+    let fat = 0;
+    let fiber = 0;
+
+    if (customItem) {
+      foodName = customItem.food?.name || "Custom Food";
+      calories = customItem.calories;
+      protein = customItem.protein;
+      carbs = customItem.carbs;
+      fat = customItem.fat;
+      fiber = customItem.fiber;
+    } else {
+      const foods = trackerService.getFoodItems();
+      const food = foods.find((f) => f.id === foodItemId);
+      if (!food) return;
+      foodName = food.name;
+      calories = Math.round(food.calories * servings);
+      protein = Math.round(food.protein * servings);
+      carbs = Math.round(food.carbs * servings);
+      fat = Math.round(food.fat * servings);
+      fiber = Math.round(food.fiber * servings);
+    }
 
     let log = logs.find((l) => l.date === date && l.meal_type === mealType);
     if (!log) {
@@ -192,13 +227,19 @@ export const trackerService = {
       nutrition_log_id: log.id,
       food_item_id: foodItemId,
       servings,
-      calories: Math.round(food.calories * servings),
-      protein: Math.round(food.protein * servings),
-      carbs: Math.round(food.carbs * servings),
-      fat: Math.round(food.fat * servings),
-      fiber: Math.round(food.fiber * servings),
+      calories,
+      protein,
+      carbs,
+      fat,
+      fiber,
       created_at: new Date().toISOString(),
     };
+
+    // If it's a custom/AI item, we also store the temporary food detail in the item object itself
+    // so getNutritionLogsToday can find its name.
+    if (customItem) {
+      (newItem as any).food = { name: foodName };
+    }
 
     logItems.push(newItem);
     setStorageItem("p72_nutrition_log_items", logItems);
