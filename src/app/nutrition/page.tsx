@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Plus, UtensilsCrossed, Calendar, Search } from "lucide-react";
+import { Plus, UtensilsCrossed, Calendar, Search, Trash2 } from "lucide-react";
 
 function parseServingGrams(serving: string): number {
   const m = serving.match(/(\d+)\s*g/i);
@@ -66,6 +66,18 @@ export default function NutritionPage() {
       setQuantity(""); setSelectedFoodId(""); setFoodSearch("");
     },
     onError: (err: any) => toast.error(err.message),
+  });
+
+  const deleteMealMutation = useMutation({
+    mutationFn: async (itemId: string) => {
+      trackerService.deleteMealItem(itemId, date);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["mealsToday", date] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummary", date] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success("Item removed");
+    },
   });
 
   const tgt = { cal: 1800, pro: 150, carb: 180, fat: 60, fib: 30 };
@@ -151,9 +163,19 @@ export default function NutritionPage() {
                   <div key={meal.id} className="space-y-2">
                     <h4 className="capitalize text-sm font-bold text-violet-400 border-b border-white/[0.04] pb-1">{meal.meal_type}</h4>
                     {meal.items.map((item:any)=>(
-                      <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.01] border border-white/[0.04] text-xs">
+                      <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.01] border border-white/[0.04] text-xs group">
                         <div><span className="font-semibold text-white">{item.food?.name||"Food"}</span><span className="text-white/40 ml-2">×{item.servings}</span></div>
-                        <div className="flex gap-3 font-medium"><span className="text-white/50">{item.calories} kcal</span><span className="text-pink-400">{item.protein}g P</span></div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white/50">{item.calories} kcal</span>
+                          <span className="text-pink-400">{item.protein}g P</span>
+                          <button
+                            onClick={() => deleteMealMutation.mutate(item.id)}
+                            className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-red-400/60 hover:text-red-400 transition-all"
+                            title="Remove item"
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>

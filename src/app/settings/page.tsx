@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { User, Sliders } from "lucide-react";
+import { User, Sliders, Trash2 } from "lucide-react";
 import type { Profile } from "@/types";
 
 export default function SettingsPage() {
@@ -164,6 +164,39 @@ export default function SettingsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Danger Zone */}
+      <Card className="bg-white/[0.02] border-red-500/20">
+        <CardHeader className="flex flex-row items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
+            <Trash2 className="h-5 w-5 text-red-400" />
+          </div>
+          <div>
+            <CardTitle className="text-red-400">Danger Zone</CardTitle>
+            <CardDescription>Irreversible actions. Be careful.</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-white/50">
+            This will delete all your weight logs, nutrition entries, habits, goals, and daily summaries from local storage. Fresh seed data will be generated on page reload.
+          </p>
+          <Button
+            variant="outline"
+            className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+            onClick={() => {
+              if (window.confirm("Are you sure? This will delete ALL your data and cannot be undone.")) {
+                trackerService.clearAllData();
+                queryClient.clear();
+                toast.success("All data cleared. Reloading...");
+                setTimeout(() => window.location.reload(), 500);
+              }
+            }}
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
+            Clear All Data & Reset
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

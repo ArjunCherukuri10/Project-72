@@ -321,6 +321,51 @@ export const trackerService = {
       total_fiber: totalFiber,
     });
   },
+  deleteMealItem: (itemId: string, date: string) => {
+    const logItems = getStorageItem<any[]>("p72_nutrition_log_items", []);
+    const filtered = logItems.filter((i) => i.id !== itemId);
+    setStorageItem("p72_nutrition_log_items", filtered);
+
+    // Recalculate daily summary macros
+    const allLogsToday = trackerService.getNutritionLogsToday(date);
+    let totalCalories = 0;
+    let totalProtein = 0;
+    let totalCarbs = 0;
+    let totalFat = 0;
+    let totalFiber = 0;
+
+    allLogsToday.forEach((l) => {
+      l.items.forEach((item: any) => {
+        totalCalories += item.calories;
+        totalProtein += item.protein;
+        totalCarbs += item.carbs;
+        totalFat += item.fat;
+        totalFiber += item.fiber;
+      });
+    });
+
+    trackerService.updateDailySummaryField(date, {
+      total_calories: totalCalories,
+      total_protein: totalProtein,
+      total_carbs: totalCarbs,
+      total_fat: totalFat,
+      total_fiber: totalFiber,
+    });
+  },
+
+  // Clear all Project 72 data from localStorage
+  clearAllData: () => {
+    if (isServer) return;
+    const keys = [
+      "p72_profile", "p72_weight_logs", "p72_food_items",
+      "p72_nutrition_logs", "p72_nutrition_log_items",
+      "p72_habit_definitions", "p72_habit_logs",
+      "p72_daily_summaries", "p72_goals",
+      "p72_workout_sessions", "p72_cardio_sessions",
+      "p72_health_metrics", "p72_body_measurements",
+    ];
+    keys.forEach((k) => localStorage.removeItem(k));
+  },
 
   // Habits Definitions & Logs
   getHabitDefinitions: (): HabitDefinition[] => getStorageItem<HabitDefinition[]>("p72_habit_definitions", []),
