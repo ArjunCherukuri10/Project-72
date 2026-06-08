@@ -15,10 +15,6 @@ interface AppState {
   // Active date for tracking
   selectedDate: string;
   setSelectedDate: (date: string) => void;
-
-  // Quick action modal
-  quickActionOpen: boolean;
-  setQuickActionOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -34,7 +30,4 @@ export const useAppStore = create<AppState>((set) => ({
 
   selectedDate: new Date().toISOString().split("T")[0],
   setSelectedDate: (date) => set({ selectedDate: date }),
-
-  quickActionOpen: false,
-  setQuickActionOpen: (open) => set({ quickActionOpen: open }),
 }));

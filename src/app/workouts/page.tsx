@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Dumbbell, Plus, Flame, Clock, Trash2, GripVertical, Sparkles } from "lucide-react";
+import { Dumbbell, Plus, Flame, Clock, Trash2, GripVertical, Sparkles, Edit2, Save, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIWorkoutPlannerView from "@/components/ai-workout-planner-view";
 
@@ -28,6 +28,14 @@ export default function WorkoutsPage() {
   const [exercises, setExercises] = useState<ExerciseEntry[]>([
     { name: "", sets: "3", reps: "10", weight: "" }
   ]);
+
+  // Edit Modal State
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState("push");
+  const [editDuration, setEditDuration] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   const { data: workouts = [] } = useQuery({
     queryKey: ["workouts"],
@@ -80,20 +88,57 @@ export default function WorkoutsPage() {
     },
   });
 
+  const editWorkoutMutation = useMutation({
+    mutationFn: async () => {
+      if (!editingId) return;
+      if (!editName) throw new Error("Session name is required");
+      return trackerService.updateWorkoutSession(editingId, {
+        name: editName,
+        type: editType,
+        duration_minutes: editDuration ? parseInt(editDuration) : null,
+        notes: editNotes || null,
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workouts"] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success("Workout updated successfully!");
+      setIsEditModalOpen(false);
+      setEditingId(null);
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to update workout");
+    },
+  });
+
+  const deleteWorkoutMutation = useMutation({
+    mutationFn: async (id: string) => {
+      return trackerService.deleteWorkoutSession(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workouts"] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success("Workout session deleted successfully");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to delete workout session");
+    },
+  });
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Workout Tracker</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-white">Workout Tracker</h1>
         <p className="text-white/60">
           Log sessions with exercises, sets, reps, and weights.
         </p>
       </div>
 
       <Tabs defaultValue="tracker" className="space-y-6">
-        <TabsList className="bg-white/[0.04] p-1 rounded-xl">
-          <TabsTrigger value="tracker" className="text-xs rounded-lg">Workout Tracker</TabsTrigger>
-          <TabsTrigger value="ai" className="text-xs rounded-lg flex items-center gap-1">
-            <Sparkles className="h-3.5 w-3.5 text-violet-400" />
+        <TabsList className="bg-[#161b22] border border-white/[0.06] p-1 rounded-xl">
+          <TabsTrigger value="tracker" className="text-xs rounded-lg data-[state=active]:bg-teal-500 data-[state=active]:text-slate-900 data-[state=active]:font-semibold">Workout Tracker</TabsTrigger>
+          <TabsTrigger value="ai" className="text-xs rounded-lg flex items-center gap-1 data-[state=active]:bg-teal-500 data-[state=active]:text-slate-900 data-[state=active]:font-semibold">
+            <Sparkles className="h-3.5 w-3.5" />
             AI Workout Plan
           </TabsTrigger>
         </TabsList>
@@ -101,10 +146,10 @@ export default function WorkoutsPage() {
         <TabsContent value="tracker" className="space-y-6">
           <div className="grid gap-6 md:grid-cols-3">
             {/* Log Workout Form */}
-            <Card className="bg-white/[0.02] md:col-span-1">
+            <Card className="bg-[#161b22] border-white/[0.06] text-white md:col-span-1">
               <CardHeader>
                 <CardTitle>Log Workout</CardTitle>
-                <CardDescription>Add exercises with sets × reps × weight.</CardDescription>
+                <CardDescription className="text-white/40">Add exercises with sets × reps × weight.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 <div className="space-y-1">
@@ -114,6 +159,7 @@ export default function WorkoutsPage() {
                     placeholder="e.g. Upper Body Push"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
+                    className="bg-zinc-900 border-white/10"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-2">
@@ -121,7 +167,7 @@ export default function WorkoutsPage() {
                     <Label htmlFor="wType">Split</Label>
                     <select
                       id="wType"
-                      className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+                      className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                       value={type}
                       onChange={(e) => setType(e.target.value)}
                     >
@@ -142,6 +188,7 @@ export default function WorkoutsPage() {
                       placeholder="60"
                       value={duration}
                       onChange={(e) => setDuration(e.target.value)}
+                      className="bg-zinc-900 border-white/10"
                     />
                   </div>
                 </div>
@@ -150,7 +197,7 @@ export default function WorkoutsPage() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <Label className="text-xs font-bold text-white/50 uppercase">Exercises</Label>
-                    <Button variant="ghost" size="sm" className="h-7 text-xs text-violet-400" onClick={addExercise}>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs text-teal-400 hover:text-teal-300" onClick={addExercise}>
                       <Plus className="h-3 w-3 mr-1" /> Add Exercise
                     </Button>
                   </div>
@@ -162,7 +209,7 @@ export default function WorkoutsPage() {
                           placeholder="Exercise name (e.g. Bench Press)"
                           value={ex.name}
                           onChange={(e) => updateExercise(idx, "name", e.target.value)}
-                          className="flex-1 h-8 text-xs"
+                          className="flex-1 h-8 text-xs bg-zinc-900 border-white/10"
                         />
                         {exercises.length > 1 && (
                           <button onClick={() => removeExercise(idx)} className="p-1 text-red-400/50 hover:text-red-400">
@@ -177,7 +224,7 @@ export default function WorkoutsPage() {
                             type="number"
                             value={ex.sets}
                             onChange={(e) => updateExercise(idx, "sets", e.target.value)}
-                            className="h-8 text-xs text-center"
+                            className="h-8 text-xs text-center bg-zinc-900 border-white/10"
                           />
                         </div>
                         <div className="space-y-0.5">
@@ -186,7 +233,7 @@ export default function WorkoutsPage() {
                             type="number"
                             value={ex.reps}
                             onChange={(e) => updateExercise(idx, "reps", e.target.value)}
-                            className="h-8 text-xs text-center"
+                            className="h-8 text-xs text-center bg-zinc-900 border-white/10"
                           />
                         </div>
                         <div className="space-y-0.5">
@@ -196,7 +243,7 @@ export default function WorkoutsPage() {
                             placeholder="—"
                             value={ex.weight}
                             onChange={(e) => updateExercise(idx, "weight", e.target.value)}
-                            className="h-8 text-xs text-center"
+                            className="h-8 text-xs text-center bg-zinc-900 border-white/10"
                           />
                         </div>
                       </div>
@@ -211,10 +258,11 @@ export default function WorkoutsPage() {
                     placeholder="Good pump, felt strong"
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
+                    className="bg-zinc-900 border-white/10"
                   />
                 </div>
                 <Button
-                  className="w-full mt-2"
+                  className="w-full mt-2 bg-teal-500 text-slate-900 hover:bg-teal-400 font-semibold"
                   onClick={() => logWorkoutMutation.mutate()}
                   disabled={logWorkoutMutation.isPending}
                 >
@@ -224,10 +272,10 @@ export default function WorkoutsPage() {
             </Card>
 
             {/* Workout History */}
-            <Card className="bg-white/[0.02] md:col-span-2">
+            <Card className="bg-[#161b22] border-white/[0.06] text-white md:col-span-2">
               <CardHeader>
                 <CardTitle>Workout History</CardTitle>
-                <CardDescription>View completed training sessions.</CardDescription>
+                <CardDescription className="text-white/40">View completed training sessions.</CardDescription>
               </CardHeader>
               <CardContent className="h-[500px] overflow-y-auto">
                 {workouts.length > 0 ? (
@@ -235,7 +283,7 @@ export default function WorkoutsPage() {
                     {workouts.map((w) => (
                       <div
                         key={w.id}
-                        className="p-4 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-violet-500/30 transition-all duration-200"
+                        className="p-4 rounded-xl border border-white/[0.04] bg-white/[0.01] hover:border-teal-500/30 transition-all duration-200"
                       >
                         <div className="flex items-start justify-between">
                           <div className="space-y-1">
@@ -246,11 +294,38 @@ export default function WorkoutsPage() {
                                 <span className="capitalize">{w.type}</span>
                               </span>
                               <span className="flex items-center gap-1">
-                                <Clock className="h-3.5 w-3.5 text-blue-400" />
+                                <Clock className="h-3.5 w-3.5 text-teal-400" />
                                 {w.duration_minutes || 60} mins
                               </span>
                               <span>{w.date}</span>
                             </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => {
+                                setEditingId(w.id);
+                                setEditName(w.name);
+                                setEditType(w.type);
+                                setEditDuration(w.duration_minutes?.toString() || "");
+                                setEditNotes(w.notes || "");
+                                setIsEditModalOpen(true);
+                              }}
+                              className="p-1 rounded text-white/40 hover:text-teal-400 hover:bg-white/5 transition-colors"
+                              title="Edit Workout"
+                            >
+                              <Edit2 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm("Are you sure you want to delete this workout session?")) {
+                                  deleteWorkoutMutation.mutate(w.id);
+                                }
+                              }}
+                              className="p-1 rounded text-white/40 hover:text-rose-400 hover:bg-white/5 transition-colors"
+                              title="Delete Workout"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
                           </div>
                         </div>
                         {w.notes && (
@@ -260,8 +335,8 @@ export default function WorkoutsPage() {
                                 {line.includes("|") ? (
                                   <span className="flex flex-wrap gap-2">
                                     {line.split(" | ").map((ex, j) => (
-                                      <span key={j} className="inline-flex items-center bg-violet-500/10 text-violet-300 px-2 py-0.5 rounded-lg text-[11px] font-mono">
-                                        <Dumbbell className="h-3 w-3 mr-1 text-violet-400" />
+                                      <span key={j} className="inline-flex items-center bg-teal-500/10 text-teal-300 px-2 py-0.5 rounded-lg text-[11px] font-mono">
+                                        <Dumbbell className="h-3 w-3 mr-1 text-teal-400" />
                                         {ex}
                                       </span>
                                     ))}
@@ -291,6 +366,72 @@ export default function WorkoutsPage() {
           <AIWorkoutPlannerView />
         </TabsContent>
       </Tabs>
+
+      {/* Edit Workout Modal Overlay */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <Card className="w-full max-w-md bg-zinc-950 border-white/[0.08] text-white">
+            <CardHeader>
+              <CardTitle>Edit Workout Session</CardTitle>
+              <CardDescription className="text-white/40">Modify completed workout session details.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1">
+                <Label htmlFor="editWName">Session Name</Label>
+                <Input
+                  id="editWName"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <Label htmlFor="editWType">Split</Label>
+                  <select
+                    id="editWType"
+                    className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                    value={editType}
+                    onChange={(e) => setEditType(e.target.value)}
+                  >
+                    <option value="push">Push</option>
+                    <option value="pull">Pull</option>
+                    <option value="legs">Legs</option>
+                    <option value="upper">Upper</option>
+                    <option value="lower">Lower</option>
+                    <option value="full_body">Full Body</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label htmlFor="editWDuration">Duration (mins)</Label>
+                  <Input
+                    id="editWDuration"
+                    type="number"
+                    value={editDuration}
+                    onChange={(e) => setEditDuration(e.target.value)}
+                    className="bg-zinc-900 border-white/10"
+                  />
+                </div>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="editWNotes">Notes & Exercises</Label>
+                <textarea
+                  id="editWNotes"
+                  rows={5}
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  className="flex w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <Button variant="outline" onClick={() => setIsEditModalOpen(false)}>Cancel</Button>
+                <Button className="bg-teal-500 text-slate-900 hover:bg-teal-400 font-semibold" onClick={() => editWorkoutMutation.mutate()}>Save Changes</Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }

@@ -21,7 +21,18 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
 
   // Step 1: Basic Profile
   const [fullName, setFullName] = useState("");
-  const [age, setAge] = useState<number>(25);
+  const [dateOfBirth, setDateOfBirth] = useState<string>("1995-01-01");
+  const age = useMemo(() => {
+    if (!dateOfBirth) return 25;
+    const birthDate = new Date(dateOfBirth);
+    const today = new Date();
+    let computedAge = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      computedAge--;
+    }
+    return computedAge;
+  }, [dateOfBirth]);
   const [gender, setGender] = useState<"male" | "female">("male");
   const [height, setHeight] = useState<number>(175);
   const [weight, setWeight] = useState<number>(80);
@@ -170,6 +181,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       profile: {
         full_name: fullName,
         age,
+        date_of_birth: dateOfBirth,
         gender,
         height_cm: height,
         starting_weight: weight,
@@ -205,7 +217,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
       <Card className="w-full max-w-2xl border-white/[0.08] bg-zinc-950/80 text-white shadow-2xl relative">
         <CardHeader className="space-y-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-violet-400 font-bold text-lg">
+            <div className="flex items-center gap-2 text-teal-400 font-bold text-lg">
               <Sparkles className="h-5 w-5 animate-pulse" />
               <span>Project 72 — Personalize Your Health OS</span>
             </div>
@@ -231,8 +243,9 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                     <Input id="fullname" placeholder="John Doe" value={fullName} onChange={(e) => setFullName(e.target.value)} />
                   </div>
                   <div className="space-y-1">
-                    <Label htmlFor="age">Age (Years) *</Label>
-                    <Input id="age" type="number" value={age} onChange={(e) => setAge(parseInt(e.target.value) || 25)} />
+                    <Label htmlFor="dob">Date of Birth *</Label>
+                    <Input id="dob" type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+                    <span className="text-[10px] text-teal-400 mt-1 block">Calculated Age: {age} years</span>
                   </div>
                 </div>
 
@@ -291,7 +304,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                     }}
                     className={`flex flex-col text-left p-4 rounded-xl border transition-all ${
                       goal === g.name
-                        ? "border-violet-500 bg-violet-600/10 shadow-lg shadow-violet-500/5"
+                        ? "border-teal-500 bg-teal-500/10 shadow-lg shadow-teal-500/5"
                         : "border-white/[0.06] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
                     }`}
                   >
@@ -384,7 +397,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                     onClick={() => setActivityLevel(act.id)}
                     className={`w-full flex items-center justify-between text-left p-3.5 rounded-xl border transition-all ${
                       activityLevel === act.id
-                        ? "border-violet-500 bg-violet-600/10 shadow-lg"
+                        ? "border-teal-500 bg-teal-500/10 shadow-lg"
                         : "border-white/[0.06] bg-white/[0.01] hover:border-white/10 hover:bg-white/[0.02]"
                     }`}
                   >
@@ -392,7 +405,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       <span className="font-bold text-sm text-white block">{act.name}</span>
                       <span className="text-xs text-white/40 mt-0.5 block">{act.desc}</span>
                     </div>
-                    <span className="text-[10px] text-violet-400 font-mono bg-violet-500/10 px-2 py-0.5 rounded-full">
+                    <span className="text-[10px] text-teal-400 font-mono bg-teal-500/10 px-2 py-0.5 rounded-full">
                       {act.multiplier}
                     </span>
                   </button>
@@ -423,7 +436,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label htmlFor="workoutDays">Workouts Per Week</Label>
-                    <select id="workoutDays" className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500" value={workoutDays} onChange={(e) => setWorkoutDays(parseInt(e.target.value) || 4)}>
+                    <select id="workoutDays" className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500" value={workoutDays} onChange={(e) => setWorkoutDays(parseInt(e.target.value) || 4)}>
                       {[1, 2, 3, 4, 5, 6, 7].map((d) => (
                         <option key={d} value={d}>{d} Day{d > 1 ? "s" : ""}</option>
                       ))}
@@ -431,7 +444,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   </div>
                   <div className="space-y-1.5">
                     <Label htmlFor="workoutDuration">Workout Duration</Label>
-                    <select id="workoutDuration" className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-violet-500" value={workoutDuration} onChange={(e) => setWorkoutDuration(parseInt(e.target.value) || 45)}>
+                    <select id="workoutDuration" className="w-full bg-zinc-900 border border-white/10 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-teal-500" value={workoutDuration} onChange={(e) => setWorkoutDuration(parseInt(e.target.value) || 45)}>
                       {[30, 45, 60, 90, 120].map((m) => (
                         <option key={m} value={m}>{m} Minutes</option>
                       ))}
@@ -540,9 +553,9 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                       <strong className="text-xl text-pink-400 font-extrabold">{calculatedTargets.protein}g</strong>
                       <span className="text-[9px] text-white/30 block mt-0.5">Muscle preservation</span>
                     </div>
-                    <div className="rounded-xl border border-violet-500/10 bg-violet-500/5 p-3 text-center">
+                    <div className="rounded-xl border border-teal-500/10 bg-teal-500/5 p-3 text-center">
                       <span className="text-[10px] text-white/50 block font-medium uppercase">Carbs</span>
-                      <strong className="text-xl text-violet-400 font-extrabold">{calculatedTargets.carbs}g</strong>
+                      <strong className="text-xl text-teal-400 font-extrabold">{calculatedTargets.carbs}g</strong>
                       <span className="text-[9px] text-white/30 block mt-0.5">Energy levels</span>
                     </div>
                   </div>
@@ -567,7 +580,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
                   </div>
 
                   <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3 text-xs flex gap-2">
-                    <Info className="h-4 w-4 text-violet-400 shrink-0 mt-0.5" />
+                    <Info className="h-4 w-4 text-teal-400 shrink-0 mt-0.5" />
                     <div>
                       <span className="font-semibold block text-white">How we calculated:</span>
                       <p className="text-white/60 leading-relaxed mt-0.5">
@@ -614,7 +627,7 @@ export default function OnboardingWizard({ onComplete }: OnboardingWizardProps) 
             Back
           </Button>
 
-          <Button onClick={handleNext} disabled={loading || (step === 1 && !fullName.trim())} className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 min-w-[100px]">
+          <Button onClick={handleNext} disabled={loading || (step === 1 && !fullName.trim())} className="bg-gradient-to-r from-teal-500 to-emerald-600 hover:from-teal-400 hover:to-emerald-500 min-w-[100px] text-slate-900 font-semibold">
             {loading ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : step === totalSteps ? (

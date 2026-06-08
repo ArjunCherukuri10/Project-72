@@ -229,8 +229,8 @@ export default function Dashboard() {
 
   if (profileLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-black">
-        <Loader2 className="h-8 w-8 text-violet-400 animate-spin" />
+      <div className="flex h-screen items-center justify-center bg-[#0f1117]">
+        <Loader2 className="h-8 w-8 text-teal-400 animate-spin" />
       </div>
     );
   }
@@ -247,7 +247,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Target Progress Bar */}
-      <Card className="relative overflow-hidden border-white/[0.08] bg-gradient-to-br from-violet-600/10 via-transparent to-indigo-600/10">
+      <Card className="relative overflow-hidden border-white/[0.08] bg-gradient-to-br from-teal-500/10 via-transparent to-emerald-500/10">
         <CardContent className="p-6 sm:p-8">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
@@ -255,7 +255,7 @@ export default function Dashboard() {
                 Am I on track to reach {goalWeight}kg?
               </h1>
               <p className="text-white/60 text-sm">
-                You have lost <span className="text-violet-400 font-bold">{formatNumber(Math.abs(weightLost))}kg</span>. You are <span className="text-indigo-400 font-bold">{lossPercentage}%</span> of the way to your target weight.
+                You have lost <span className="text-teal-400 font-bold">{formatNumber(Math.abs(weightLost))}kg</span>. You are <span className="text-emerald-400 font-bold">{lossPercentage}%</span> of the way to your target weight.
               </p>
             </div>
             <div className="flex items-center gap-4">
@@ -263,7 +263,7 @@ export default function Dashboard() {
                 <div className="text-[10px] font-bold uppercase tracking-wider text-white/40">
                   Estimated Completion Date
                 </div>
-                <div className="text-lg font-extrabold text-violet-400">
+                <div className="text-lg font-extrabold text-teal-400">
                   {estimatedGoalDateObj.toLocaleDateString("en-US", {
                     month: "long",
                     day: "numeric",
@@ -271,16 +271,12 @@ export default function Dashboard() {
                   })}
                 </div>
               </div>
-              <Button onClick={() => setCheckinOpen(true)} className="bg-violet-600 hover:bg-violet-500 font-bold shadow-lg shadow-violet-500/20 text-xs py-2 h-9">
-                <Plus className="h-4 w-4 mr-1.5" />
-                Quick Log
-              </Button>
             </div>
           </div>
           <div className="mt-6 space-y-2">
             <div className="flex justify-between text-xs font-bold font-mono">
               <span className="text-white/40">{startingWeight}kg (Start)</span>
-              <span className="text-violet-300 font-extrabold">{formatNumber(currentWeight)}kg (Now)</span>
+              <span className="text-teal-300 font-extrabold">{formatNumber(currentWeight)}kg (Now)</span>
               <span className="text-white/40">{goalWeight}kg (Goal)</span>
             </div>
             <Progress value={lossPercentage} className="h-2.5 bg-white/[0.04]" />
@@ -293,7 +289,7 @@ export default function Dashboard() {
         <Card className="bg-white/[0.02] border-white/[0.06]">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-white/40 uppercase">Current Weight</CardTitle>
-            <Scale className="h-4 w-4 text-violet-400" />
+            <Scale className="h-4 w-4 text-teal-400" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-extrabold">{formatNumber(currentWeight)}kg</div>
@@ -323,10 +319,10 @@ export default function Dashboard() {
         <Card className="bg-white/[0.02] border-white/[0.06] relative overflow-hidden">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-white/40 uppercase">Compliance Score</CardTitle>
-            <Award className="h-4 w-4 text-indigo-400 animate-pulse" />
+            <Award className="h-4 w-4 text-teal-400 animate-pulse" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-violet-400 to-indigo-400">
+            <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">
               {complianceScore} / 100
             </div>
             <p className="text-[10px] text-white/40 mt-1">Daily adherence index</p>
@@ -338,7 +334,7 @@ export default function Dashboard() {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="text-base font-bold text-white flex items-center gap-1.5">
-            <CheckCircle className="h-4 w-4 text-violet-400" />
+            <CheckCircle className="h-4 w-4 text-teal-400" />
             Daily Compliance Indicators
           </h3>
           <span className="text-[10px] text-white/40 font-mono">Today: {todayStr}</span>
@@ -384,9 +380,9 @@ export default function Dashboard() {
               <span className="text-[9px] text-white/30 block">Steps</span>
             </CardContent>
           </Card>
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todaySleep >= tgt.sleep ? "border-violet-500/20 bg-violet-500/[0.01]" : ""}`}>
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todaySleep >= tgt.sleep ? "border-teal-500/20 bg-teal-500/[0.01]" : ""}`}>
             <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
-              <Moon className="h-5 w-5 text-violet-400" />
+              <Moon className="h-5 w-5 text-teal-400" />
               <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Sleep</div>
               <div className="text-sm font-extrabold text-white">{todaySleep}h / {tgt.sleep}h</div>
               <span className="text-[9px] text-white/30 block">Hours</span>
@@ -409,8 +405,8 @@ export default function Dashboard() {
                 <AreaChart data={weightChartData}>
                   <defs>
                     <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#14b8a6" stopOpacity={0.2} />
+                      <stop offset="95%" stopColor="#14b8a6" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#27272a" />
@@ -418,7 +414,7 @@ export default function Dashboard() {
                   <YAxis domain={["dataMin - 1", "dataMax + 1"]} stroke="#71717a" fontSize={11} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0f0f1a",
+                      backgroundColor: "#161b22",
                       border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: "12px",
                       color: "#fff",
@@ -427,7 +423,7 @@ export default function Dashboard() {
                   <Area
                     type="monotone"
                     dataKey="weight"
-                    stroke="#8b5cf6"
+                    stroke="#14b8a6"
                     fillOpacity={1}
                     fill="url(#weightGrad)"
                     strokeWidth={2}
@@ -466,7 +462,7 @@ export default function Dashboard() {
                   <YAxis stroke="#71717a" fontSize={11} />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: "#0f0f1a",
+                      backgroundColor: "#161b22",
                       border: "1px solid rgba(255,255,255,0.08)",
                       borderRadius: "12px",
                       color: "#fff",

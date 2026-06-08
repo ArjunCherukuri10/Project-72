@@ -26,6 +26,7 @@ export default function SettingsPage() {
 
   // State fields
   const [fullName, setFullName] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("1995-01-01");
   const [startingWeight, setStartingWeight] = useState("");
   const [goalWeight, setGoalWeight] = useState("");
   const [heightCm, setHeightCm] = useState("");
@@ -44,6 +45,7 @@ export default function SettingsPage() {
     setTimeout(() => {
       if (profile) {
         setFullName(profile.full_name || "");
+        setDateOfBirth(profile.date_of_birth || "1995-01-01");
         setStartingWeight(profile.starting_weight?.toString() || "");
         setGoalWeight(profile.goal_weight?.toString() || "");
         setHeightCm(profile.height_cm?.toString() || "");
@@ -66,6 +68,7 @@ export default function SettingsPage() {
       const updatedProfile = {
         ...profile,
         full_name: fullName,
+        date_of_birth: dateOfBirth,
         starting_weight: parseFloat(startingWeight) || 80.0,
         goal_weight: parseFloat(goalWeight) || 72.0,
         height_cm: parseFloat(heightCm) || 175.0,
@@ -88,8 +91,8 @@ export default function SettingsPage() {
         // Mifflin-St Jeor Auto-Calculation
         const weightVal = parseFloat(startingWeight) || 80.0;
         const heightVal = parseFloat(heightCm) || 175.0;
-        const dob = profile?.date_of_birth ? new Date(profile.date_of_birth) : new Date(2000, 0, 1);
-        const age = Math.floor((Date.now() - dob.getTime()) / 31557600000) || 25;
+        const dobDate = new Date(dateOfBirth);
+        const age = Math.floor((Date.now() - dobDate.getTime()) / 31557600000) || 25;
 
         let bmr = 10 * weightVal + 6.25 * heightVal - 5 * age;
         if (gender === "male") {
@@ -149,7 +152,7 @@ export default function SettingsPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-extrabold tracking-tight">Settings</h1>
+        <h1 className="text-3xl font-extrabold tracking-tight text-white">Settings</h1>
         <p className="text-white/60 text-sm">
           Customize your bio metrics, diet goals, and custom calorie/protein limits.
         </p>
@@ -157,17 +160,17 @@ export default function SettingsPage() {
 
       <div className="grid gap-6 md:grid-cols-3">
         {/* Profile Settings Card */}
-        <Card className="bg-white/[0.02] border-white/[0.06] md:col-span-2">
-          <CardHeader className="flex flex-row items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-violet-500/10 flex items-center justify-center">
-              <User className="h-5 w-5 text-violet-400" />
+        <Card className="bg-[#161b22] border-white/[0.06] text-white md:col-span-2">
+          <CardHeader className="flex flex-row items-center gap-3 border-b border-white/[0.06] pb-4">
+            <div className="h-10 w-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+              <User className="h-5 w-5 text-teal-400" />
             </div>
             <div>
               <CardTitle>Profile Details</CardTitle>
-              <CardDescription>Configure personal details for goal metrics.</CardDescription>
+              <CardDescription className="text-white/40">Configure personal details for goal metrics.</CardDescription>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 pt-6">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="sName">Full Name</Label>
@@ -176,6 +179,7 @@ export default function SettingsPage() {
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="Arjun Cherukuri"
+                  className="bg-zinc-900 border-white/10"
                 />
               </div>
               <div className="space-y-1">
@@ -186,7 +190,33 @@ export default function SettingsPage() {
                   value={heightCm}
                   onChange={(e) => setHeightCm(e.target.value)}
                   placeholder="175"
+                  className="bg-zinc-900 border-white/10"
                 />
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="sDob">Date of Birth</Label>
+                <Input
+                  id="sDob"
+                  type="date"
+                  value={dateOfBirth}
+                  onChange={(e) => setDateOfBirth(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="sGender">Gender</Label>
+                <select
+                  id="sGender"
+                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={gender}
+                  onChange={(e) => setGender(e.target.value)}
+                >
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
             </div>
 
@@ -199,6 +229,7 @@ export default function SettingsPage() {
                   value={startingWeight}
                   onChange={(e) => setStartingWeight(e.target.value)}
                   placeholder="80"
+                  className="bg-zinc-900 border-white/10"
                 />
               </div>
               <div className="space-y-1">
@@ -209,28 +240,17 @@ export default function SettingsPage() {
                   value={goalWeight}
                   onChange={(e) => setGoalWeight(e.target.value)}
                   placeholder="72"
+                  className="bg-zinc-900 border-white/10"
                 />
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="sGender">Gender</Label>
-                <select
-                  id="sGender"
-                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none"
-                  value={gender}
-                  onChange={(e) => setGender(e.target.value)}
-                >
-                  <option value="male">Male</option>
-                  <option value="female">Female</option>
-                </select>
-              </div>
-              <div className="space-y-1">
                 <Label htmlFor="sActivity">Activity Factor</Label>
                 <select
                   id="sActivity"
-                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none"
+                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={activityLevel}
                   onChange={(e) => setActivityLevel(e.target.value)}
                 >
@@ -241,28 +261,27 @@ export default function SettingsPage() {
                   <option value="extra_active">Extra Active (athlete level)</option>
                 </select>
               </div>
-            </div>
-
-            <div className="grid gap-4 sm:grid-cols-2 border-t border-white/[0.04] pt-4">
               <div className="space-y-1">
                 <Label htmlFor="sDiet">Dietary Preference</Label>
                 <select
                   id="sDiet"
-                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none"
+                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={dietPreference}
                   onChange={(e) => setDietPreference(e.target.value)}
                 >
                   <option value="vegetarian">Vegetarian</option>
                   <option value="vegan">Vegan</option>
-                  <option value="keto">Keto</option>
                   <option value="non_vegetarian">Non-Vegetarian</option>
                 </select>
               </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label htmlFor="sBudget">Meal Budget Preference</Label>
                 <select
                   id="sBudget"
-                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none"
+                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
                   value={budgetPreference}
                   onChange={(e) => setBudgetPreference(e.target.value)}
                 >
@@ -278,11 +297,11 @@ export default function SettingsPage() {
                 <input
                   id="customTargets"
                   type="checkbox"
-                  className="rounded border-white/[0.08] bg-black text-violet-500 focus:ring-violet-500 h-4 w-4"
+                  className="rounded border-white/[0.08] bg-black text-teal-500 focus:ring-teal-500 h-4 w-4"
                   checked={useCustomTargets}
                   onChange={(e) => setUseCustomTargets(e.target.checked)}
                 />
-                <Label htmlFor="customTargets" className="text-xs font-bold text-violet-300 flex items-center gap-1.5 cursor-pointer">
+                <Label htmlFor="customTargets" className="text-xs font-bold text-teal-300 flex items-center gap-1.5 cursor-pointer">
                   <Sparkles className="h-3.5 w-3.5" />
                   Override Daily Calorie & Protein Targets
                 </Label>
@@ -298,6 +317,7 @@ export default function SettingsPage() {
                       value={customCalories}
                       onChange={(e) => setCustomCalories(e.target.value)}
                       placeholder="1900"
+                      className="bg-zinc-900 border-white/10"
                     />
                   </div>
                   <div className="space-y-1">
@@ -308,6 +328,7 @@ export default function SettingsPage() {
                       value={customProtein}
                       onChange={(e) => setCustomProtein(e.target.value)}
                       placeholder="130"
+                      className="bg-zinc-900 border-white/10"
                     />
                   </div>
                 </div>
@@ -315,7 +336,7 @@ export default function SettingsPage() {
             </div>
 
             <Button
-              className="mt-2 w-full sm:w-auto"
+              className="mt-2 bg-teal-500 text-slate-900 hover:bg-teal-400 font-semibold w-full sm:w-auto"
               onClick={() => updateProfileMutation.mutate()}
               disabled={updateProfileMutation.isPending}
             >
@@ -325,20 +346,20 @@ export default function SettingsPage() {
         </Card>
 
         {/* preferences */}
-        <Card className="bg-white/[0.02] border-white/[0.06]">
+        <Card className="bg-[#161b22] border-white/[0.06] text-white">
           <CardHeader className="flex flex-row items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
-              <Sliders className="h-5 w-5 text-indigo-400" />
+            <div className="h-10 w-10 rounded-xl bg-teal-500/10 flex items-center justify-center">
+              <Sliders className="h-5 w-5 text-teal-400" />
             </div>
             <div>
               <CardTitle>System</CardTitle>
-              <CardDescription>Preferences & backups.</CardDescription>
+              <CardDescription className="text-white/40">Preferences & backups.</CardDescription>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1">
               <Label>Unit System</Label>
-              <select className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none">
+              <select className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
                 <option value="metric">Metric (kg, cm, ml)</option>
                 <option value="imperial">Imperial (lbs, inches, oz)</option>
               </select>
@@ -346,7 +367,7 @@ export default function SettingsPage() {
 
             <div className="space-y-1">
               <Label>Theme Selection</Label>
-              <select className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-[#07070f] px-3 text-sm text-white focus:outline-none">
+              <select className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500">
                 <option value="dark">Dark Mode (Default)</option>
                 <option value="light">Light Mode</option>
               </select>
@@ -372,14 +393,14 @@ export default function SettingsPage() {
       </div>
 
       {/* Danger Zone */}
-      <Card className="bg-white/[0.02] border-red-500/20">
+      <Card className="bg-[#161b22] border-red-500/20 text-white">
         <CardHeader className="flex flex-row items-center gap-3">
           <div className="h-10 w-10 rounded-xl bg-red-500/10 flex items-center justify-center">
             <Trash2 className="h-5 w-5 text-red-400" />
           </div>
           <div>
             <CardTitle className="text-red-400">Danger Zone</CardTitle>
-            <CardDescription>Irreversible actions.</CardDescription>
+            <CardDescription className="text-white/40">Irreversible actions.</CardDescription>
           </div>
         </CardHeader>
         <CardContent className="space-y-3">

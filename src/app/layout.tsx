@@ -4,7 +4,6 @@ import "./globals.css";
 import { QueryProvider } from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
 import { AppShell } from "@/components/layout/app-shell";
-import { QuickActionModal } from "@/components/layout/quick-action-modal";
 import { Toaster } from "sonner";
 
 const geistSans = Geist({
@@ -33,12 +32,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
       style={{ colorScheme: "dark" }}
     >
-      <body className="min-h-full flex flex-col bg-[#07070f] text-white selection:bg-violet-500/30 selection:text-white">
+      <body className="min-h-full flex flex-col bg-[#0f1117] text-white selection:bg-teal-500/30 selection:text-white">
         <QueryProvider>
           <ThemeProvider defaultTheme="dark">
             <AppShell>
               {children}
-              <QuickActionModal />
             </AppShell>
             <Toaster position="bottom-right" theme="dark" closeButton richColors />
           </ThemeProvider>

@@ -1,16 +1,35 @@
 "use client";
 
-import { Menu, Plus, Bell, Search } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Menu } from "lucide-react";
 import { useAppStore } from "@/stores/app-store";
-import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
+import Link from "next/link";
+import { trackerService } from "@/lib/services";
+import { Profile } from "@/types";
 
 export function Header() {
-  const { toggleSidebar, setQuickActionOpen } = useAppStore();
+  const { toggleSidebar } = useAppStore();
+  const [profile, setProfile] = useState<Profile | null>(null);
   const today = format(new Date(), "EEEE, MMMM d, yyyy");
 
+  useEffect(() => {
+    trackerService.getProfile().then(setProfile).catch(console.error);
+  }, []);
+
+  const getInitials = (name?: string | null) => {
+    if (!name) return "U";
+    return name
+      .trim()
+      .split(/\s+/)
+      .map((n) => n[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase();
+  };
+
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/[0.06] bg-[#07070f]/80 backdrop-blur-2xl px-4 lg:px-6">
+    <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-white/[0.06] bg-[#0f1117]/80 backdrop-blur-2xl px-4 lg:px-6">
       {/* Mobile menu button */}
       <button
         onClick={toggleSidebar}
@@ -32,31 +51,14 @@ export function Header() {
 
       {/* Actions */}
       <div className="flex items-center gap-2">
-        <Button
-          variant="ghost"
-          size="icon"
-          className="hidden sm:flex text-white/50 hover:text-white"
-          aria-label="Search"
-        >
-          <Search className="h-4 w-4" />
-        </Button>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-white/50 hover:text-white relative"
-          aria-label="Notifications"
-        >
-          <Bell className="h-4 w-4" />
-          <span className="absolute top-2 right-2 h-1.5 w-1.5 rounded-full bg-violet-500" />
-        </Button>
-        <Button
-          size="sm"
-          onClick={() => setQuickActionOpen(true)}
-          className="gap-1.5"
-        >
-          <Plus className="h-4 w-4" />
-          <span className="hidden sm:inline">Quick Log</span>
-        </Button>
+        <Link href="/profile">
+          <button
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-teal-500/10 border border-teal-500/20 text-teal-400 font-semibold text-sm hover:bg-teal-500/20 transition-all duration-200 shadow-sm"
+            title="View Profile"
+          >
+            {getInitials(profile?.full_name)}
+          </button>
+        </Link>
       </div>
     </header>
   );

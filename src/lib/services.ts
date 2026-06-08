@@ -133,13 +133,13 @@ export const trackerService = {
     const uid = await getUserId();
     const cleanData = { ...data };
     
-    // Map age to date_of_birth if present
-    if (cleanData.age !== undefined) {
+    // Map age to date_of_birth if present and date_of_birth not already provided
+    if (cleanData.age !== undefined && !cleanData.date_of_birth) {
       const currentYear = new Date().getFullYear();
       const birthYear = currentYear - Number(cleanData.age);
       cleanData.date_of_birth = `${birthYear}-01-01`;
-      delete cleanData.age;
     }
+    delete cleanData.age;
 
     if (uid) {
       const sb = getSupabase()!;
@@ -215,6 +215,32 @@ export const trackerService = {
     // Update Daily Summary
     await trackerService.updateDailySummaryField(date, { weight });
     return newLog;
+  },
+  updateWeightLog: async (id: string, data: { weight?: number; date?: string; time_recorded?: string | null; notes?: string | null }) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("weight_logs").update(data).eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const logs = getStorageItem<WeightLog[]>("p72_weight_logs", []);
+    const idx = logs.findIndex((l) => l.id === id);
+    if (idx > -1) {
+      logs[idx] = { ...logs[idx], ...data };
+      setStorageItem("p72_weight_logs", logs);
+    }
+  },
+  deleteWeightLog: async (id: string) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("weight_logs").delete().eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const logs = getStorageItem<WeightLog[]>("p72_weight_logs", []);
+    setStorageItem("p72_weight_logs", logs.filter((l) => l.id !== id));
   },
 
   // Aliases used by nutrition page
@@ -731,6 +757,32 @@ export const trackerService = {
     await trackerService.updateDailySummaryField(session.date, { workout_completed: true });
     return newSession;
   },
+  updateWorkoutSession: async (id: string, data: { name?: string; type?: string; date?: string; duration_minutes?: number | null; notes?: string | null; completed?: boolean }) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("workout_sessions").update(data).eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const sessions = getStorageItem<WorkoutSession[]>("p72_workout_sessions", []);
+    const idx = sessions.findIndex((s) => s.id === id);
+    if (idx > -1) {
+      sessions[idx] = { ...sessions[idx], ...data };
+      setStorageItem("p72_workout_sessions", sessions);
+    }
+  },
+  deleteWorkoutSession: async (id: string) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("workout_sessions").delete().eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const sessions = getStorageItem<WorkoutSession[]>("p72_workout_sessions", []);
+    setStorageItem("p72_workout_sessions", sessions.filter((s) => s.id !== id));
+  },
 
   // Cardio Tracker
   getCardioSessions: async (): Promise<CardioSession[]> => {
@@ -763,6 +815,32 @@ export const trackerService = {
     sessions.push(newSession);
     setStorageItem("p72_cardio_sessions", sessions);
     return newSession;
+  },
+  updateCardioSession: async (id: string, data: Partial<Omit<CardioSession, "id" | "user_id" | "created_at">>) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("cardio_sessions").update(data).eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const sessions = getStorageItem<CardioSession[]>("p72_cardio_sessions", []);
+    const idx = sessions.findIndex((s) => s.id === id);
+    if (idx > -1) {
+      sessions[idx] = { ...sessions[idx], ...data };
+      setStorageItem("p72_cardio_sessions", sessions);
+    }
+  },
+  deleteCardioSession: async (id: string) => {
+    const uid = await getUserId();
+    if (uid) {
+      const sb = getSupabase()!;
+      const { error } = await sb.from("cardio_sessions").delete().eq("id", id).eq("user_id", uid);
+      if (error) throw error;
+      return;
+    }
+    const sessions = getStorageItem<CardioSession[]>("p72_cardio_sessions", []);
+    setStorageItem("p72_cardio_sessions", sessions.filter((s) => s.id !== id));
   },
 
   // Goals
