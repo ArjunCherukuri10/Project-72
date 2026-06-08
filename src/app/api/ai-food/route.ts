@@ -25,7 +25,7 @@ Return ONLY the JSON array, no markdown, no explanation.`;
 export async function POST(request: NextRequest) {
   if (!GEMINI_API_KEY) {
     return NextResponse.json(
-      { error: "Gemini API key not configured. Add GEMINI_API_KEY to your .env.local file." },
+      { error: "API key not configured. Add GEMINI_API_KEY to your .env.local file." },
       { status: 500 }
     );
   }
@@ -37,41 +37,84 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Please describe what you ate." }, { status: 400 });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contents: [
-            {
-              role: "user",
-              parts: [{ text: `${SYSTEM_PROMPT}\n\nUser says: "${description}"` }],
-            },
-          ],
-          generationConfig: {
-            temperature: 0.1,
-            responseMimeType: "application/json",
+    let text = "";
+
+    const isOpenRouter = GEMINI_API_KEY.startsWith("sk-or-");
+
+    if (isOpenRouter) {
+      const response = await fetch(
+        "https://openrouter.ai/api/v1/chat/completions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${GEMINI_API_KEY}`,
           },
-        }),
+          body: JSON.stringify({
+            model: "google/gemini-2.5-flash",
+            messages: [
+              { role: "system", content: SYSTEM_PROMPT },
+              { role: "user", content: `User says: "${description}"` }
+            ],
+            response_format: { type: "json_object" }
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("OpenRouter API error:", err);
+        return NextResponse.json({ error: "Failed to reach OpenRouter. Check your API key." }, { status: 502 });
       }
-    );
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("Gemini API error:", err);
-      return NextResponse.json({ error: "Failed to reach Gemini AI. Check your API key." }, { status: 502 });
+      const data = await response.json();
+      text = data?.choices?.[0]?.message?.content || "";
+    } else {
+      const response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: `${SYSTEM_PROMPT}\n\nUser says: "${description}"` }],
+              },
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              responseMimeType: "application/json",
+            },
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        const err = await response.text();
+        console.error("Gemini API error:", err);
+        return NextResponse.json({ error: "Failed to reach Gemini AI. Check your API key." }, { status: 502 });
+      }
+
+      const data = await response.json();
+      text = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     }
-
-    const data = await response.json();
-    const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
     if (!text) {
-      return NextResponse.json({ error: "No response from Gemini." }, { status: 502 });
+      return NextResponse.json({ error: "No response from AI." }, { status: 502 });
     }
 
-    // Parse the JSON response
-    const items = JSON.parse(text);
+    // Sometimes models return a wrapper JSON with a key name if we requested response_format json_object
+    let items = JSON.parse(text);
+    if (!Array.isArray(items) && items.items && Array.isArray(items.items)) {
+      items = items.items;
+    } else if (!Array.isArray(items) && typeof items === "object") {
+      // If it returned a single object containing the array, extract it
+      const possibleArray = Object.values(items).find(Array.isArray);
+      if (possibleArray) {
+        items = possibleArray;
+      }
+    }
 
     if (!Array.isArray(items)) {
       return NextResponse.json({ error: "Unexpected response format." }, { status: 502 });
