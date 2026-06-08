@@ -46,6 +46,15 @@ export default function Dashboard() {
   const [checkinOpen, setCheckinOpen] = useState(false);
   const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
 
+  // Refresh weight & daily summaries each day (24h)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      queryClient.invalidateQueries({ queryKey: ["weightLogs"] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+    }, 24 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [queryClient]);
+
   // Fetch Core Queries
   const { data: profile, isLoading: profileLoading } = useQuery<Profile | null>({
     queryKey: ["profile"],
@@ -109,6 +118,13 @@ const weightLost = startingWeight - currentWeight;
   const bmi = calculateBMI(currentWeight, heightCm);
 
   // Dynamic estimated goal date based on rate
+  // Auto-open Daily Check‑in if there is no weight entry for today
+  useEffect(() => {
+    const hasToday = weightLogs.some((log) => log.date === todayStr);
+    if (!hasToday && !checkinOpen) {
+      setCheckinOpen(true);
+    }
+  }, [weightLogs, todayStr, checkinOpen]);
   const weeklyWeightChangeRate = currentWeight > goalWeight ? 0.5 : 0.2; // 0.5kg/week loss or 0.2kg/week gain
 
   const estimatedGoalDateObj = useMemo(() => {
