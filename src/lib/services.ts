@@ -131,9 +131,18 @@ export const trackerService = {
   },
   updateProfile: async (data: any) => {
     const uid = await getUserId();
+    const cleanData = { ...data };
+    
+    // Map age to date_of_birth if present
+    if (cleanData.age !== undefined) {
+      const currentYear = new Date().getFullYear();
+      const birthYear = currentYear - Number(cleanData.age);
+      cleanData.date_of_birth = `${birthYear}-01-01`;
+      delete cleanData.age;
+    }
+
     if (uid) {
       const sb = getSupabase()!;
-      const cleanData = { ...data };
       delete cleanData.id;
       delete cleanData.email;
       delete cleanData.created_at;
@@ -151,7 +160,7 @@ export const trackerService = {
       return updated;
     }
     const current = getStorageItem("p72_profile", {});
-    const updated = { ...current, ...data, updated_at: new Date().toISOString() };
+    const updated = { ...current, ...cleanData, updated_at: new Date().toISOString() };
     setStorageItem("p72_profile", updated);
     return updated;
   },
