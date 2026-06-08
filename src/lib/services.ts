@@ -69,16 +69,42 @@ const initMockData = () => {
     setStorageItem("p72_weight_logs", weights);
   }
 
-  // Food Items
+  // Food Items — built-in nutrition database (values per 100g unless noted)
   if (!localStorage.getItem("p72_food_items")) {
-    const defaultFoods: FoodItem[] = [
-      { id: "f1", user_id: "user-1", name: "Chicken Breast (Cooked)", serving_size: "100g", calories: 165, protein: 31, carbs: 0, fat: 3.6, fiber: 0, sugar: 0, sodium: 74, category: "Protein", is_favorite: true, notes: "Meal prep staple", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: "f2", user_id: "user-1", name: "White Rice (Cooked)", serving_size: "150g", calories: 195, protein: 4.3, carbs: 42, fat: 0.4, fiber: 0.6, sugar: 0.1, sodium: 2, category: "Grains", is_favorite: false, notes: "Easy carbs", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: "f3", user_id: "user-1", name: "Whey Protein Isolate", serving_size: "1 scoop (30g)", calories: 120, protein: 25, carbs: 2, fat: 1, fiber: 0, sugar: 1, sodium: 50, category: "Supplements", is_favorite: true, notes: "Post workout", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: "f4", user_id: "user-1", name: "Whole Egg", serving_size: "1 large (50g)", calories: 70, protein: 6, carbs: 0.6, fat: 5, fiber: 0, sugar: 0, sodium: 70, category: "Protein", is_favorite: true, notes: "Breakfast essential", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-      { id: "f5", user_id: "user-1", name: "Broccoli", serving_size: "100g", calories: 34, protein: 2.8, carbs: 7, fat: 0.4, fiber: 2.6, sugar: 1.7, sodium: 33, category: "Vegetables", is_favorite: false, notes: "Micronutrients", created_at: new Date().toISOString(), updated_at: new Date().toISOString() },
-    ];
-    setStorageItem("p72_food_items", defaultFoods);
+    const ts = new Date().toISOString();
+    const f = (id:string,name:string,srv:string,cal:number,pro:number,carb:number,fat:number,fib:number,cat:string,fav=false):FoodItem=>({id,user_id:"user-1",name,serving_size:srv,calories:cal,protein:pro,carbs:carb,fat,fiber:fib,sugar:0,sodium:0,category:cat,is_favorite:fav,notes:null,created_at:ts,updated_at:ts});
+    setStorageItem("p72_food_items", [
+      f("f1","Chicken Breast","per 100g",165,31,0,3.6,0,"Protein",true),
+      f("f2","Egg (Whole)","per 1 egg (50g)",78,6.3,0.6,5.3,0,"Protein",true),
+      f("f3","Egg White","per 1 white (33g)",17,3.6,0.2,0.1,0,"Protein"),
+      f("f4","Paneer","per 100g",265,18.3,1.2,20.8,0,"Dairy",true),
+      f("f5","Greek Yogurt","per 100g",59,10,3.6,0.4,0,"Dairy"),
+      f("f6","Whole Milk","per 100ml",61,3.2,4.8,3.3,0,"Dairy"),
+      f("f7","Whey Protein","per 1 scoop (30g)",120,25,2,1,0,"Supplement",true),
+      f("f8","White Rice (Cooked)","per 100g",130,2.7,28,0.3,0.4,"Grains"),
+      f("f9","Brown Rice (Cooked)","per 100g",112,2.6,24,0.9,1.8,"Grains"),
+      f("f10","Chapati/Roti","per 1 piece (40g)",120,3.1,18.3,3.7,1.9,"Grains",true),
+      f("f11","Oats","per 100g",389,16.9,66,6.9,10.6,"Grains"),
+      f("f12","White Bread","per 1 slice (30g)",79,2.7,15,1,0.6,"Grains"),
+      f("f13","Banana","per 1 medium (120g)",105,1.3,27,0.4,3.1,"Fruit"),
+      f("f14","Apple","per 1 medium (180g)",95,0.5,25,0.3,4.4,"Fruit"),
+      f("f15","Dal (Cooked Toor)","per 100g",128,7.6,18.5,2.7,4.2,"Legumes",true),
+      f("f16","Chickpeas (Cooked)","per 100g",164,8.9,27.4,2.6,7.6,"Legumes"),
+      f("f17","Moong Dal (Cooked)","per 100g",105,7.1,18.3,0.4,1.5,"Legumes"),
+      f("f18","Broccoli","per 100g",34,2.8,7,0.4,2.6,"Vegetables"),
+      f("f19","Spinach (Raw)","per 100g",23,2.9,3.6,0.4,2.2,"Vegetables"),
+      f("f20","Sweet Potato","per 100g",86,1.6,20,0.1,3,"Vegetables"),
+      f("f21","Potato (Boiled)","per 100g",87,1.9,20,0.1,1.8,"Vegetables"),
+      f("f22","Salmon","per 100g",208,20,0,13,0,"Protein"),
+      f("f23","Tuna (Canned)","per 100g",116,26,0,1,0,"Protein"),
+      f("f24","Mutton (Cooked)","per 100g",294,25,0,21,0,"Protein"),
+      f("f25","Peanut Butter","per 1 tbsp (16g)",94,4,3.5,8,0.8,"Fats"),
+      f("f26","Almonds","per 100g",579,21,22,50,12.5,"Nuts"),
+      f("f27","Olive Oil","per 1 tbsp (14ml)",119,0,0,14,0,"Fats"),
+      f("f28","Ghee","per 1 tbsp (14g)",123,0,0,14,0,"Fats"),
+      f("f29","Idli","per 1 piece (60g)",39,2,8,0.1,0.4,"Grains"),
+      f("f30","Dosa (Plain)","per 1 piece (80g)",120,2.7,18,3.7,0.6,"Grains"),
+    ]);
   }
 
   // Nutrition logs for today
@@ -87,7 +113,7 @@ const initMockData = () => {
       { id: "n1", user_id: "user-1", date: todayStr, meal_type: "breakfast", created_at: new Date().toISOString() }
     ];
     const nutritionItems = [
-      { id: "ni1", nutrition_log_id: "n1", food_item_id: "f4", servings: 3, calories: 210, protein: 18, carbs: 1.8, fat: 15, fiber: 0 }
+      { id: "ni1", nutrition_log_id: "n1", food_item_id: "f2", servings: 3, calories: 234, protein: 18.9, carbs: 1.8, fat: 15.9, fiber: 0 }
     ];
     setStorageItem("p72_nutrition_logs", nutrition);
     setStorageItem("p72_nutrition_log_items", nutritionItems);
@@ -114,30 +140,31 @@ const initMockData = () => {
     setStorageItem("p72_habit_logs", defaultLogs);
   }
 
-  // Daily Summaries
+  // Daily Summaries — generate 30 days of history so charts work
   if (!localStorage.getItem("p72_daily_summaries")) {
-    const daily: DailySummary[] = [
-      {
-        id: `ds-${todayStr}`,
-        user_id: "user-1",
-        date: todayStr,
-        weight: 85.5,
-        total_calories: 1420,
-        total_protein: 110,
-        total_carbs: 125,
-        total_fat: 45,
-        total_fiber: 18,
-        water_ml: 3000,
-        steps: 10450,
-        sleep_hours: 7.8,
-        workout_completed: true,
-        mood: 4,
-        notes: "Feeling solid today.",
-        compliance_score: 80,
+    const daily: DailySummary[] = [];
+    for (let i = 30; i >= 0; i--) {
+      const d = format(subDays(new Date(), i), "yyyy-MM-dd");
+      const factor = (30 - i) / 30;
+      const w = parseFloat((90 - factor * 4.5 + Math.sin(i*0.7)*0.3).toFixed(1));
+      daily.push({
+        id: `ds-${d}`, user_id: "user-1", date: d, weight: w,
+        total_calories: Math.round(1500 + Math.random()*500),
+        total_protein: Math.round(100 + Math.random()*60),
+        total_carbs: Math.round(120 + Math.random()*80),
+        total_fat: Math.round(40 + Math.random()*30),
+        total_fiber: Math.round(15 + Math.random()*15),
+        water_ml: Math.round(2000 + Math.random()*1500),
+        steps: Math.round(6000 + Math.random()*8000),
+        sleep_hours: parseFloat((6 + Math.random()*2.5).toFixed(1)),
+        workout_completed: Math.random() > 0.3,
+        mood: Math.floor(3 + Math.random()*2),
+        notes: null,
+        compliance_score: Math.round(50 + Math.random()*45),
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      }
-    ];
+      });
+    }
     setStorageItem("p72_daily_summaries", daily);
   }
 
