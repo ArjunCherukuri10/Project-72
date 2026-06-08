@@ -22,6 +22,7 @@ import {
   ChevronLeft,
   Flame,
   X,
+  LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app-store";
@@ -193,6 +194,27 @@ export function Sidebar() {
             })}
           </nav>
         </ScrollArea>
+
+        {/* Sign Out Button */}
+        {typeof window !== "undefined" && (process.env.NEXT_PUBLIC_SUPABASE_URL || "").includes("placeholder") === false && (
+          <div className="px-3 py-1 border-t border-white/[0.06]">
+            <button
+              onClick={async () => {
+                const { createClient } = await import("@/lib/supabase/client");
+                const supabase = createClient();
+                await supabase.auth.signOut();
+                window.location.href = "/auth/login";
+              }}
+              className={cn(
+                "flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-red-400/70 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200",
+                sidebarCollapsed && "justify-center px-0"
+              )}
+            >
+              <LogOut className="h-[18px] w-[18px] shrink-0" />
+              {!sidebarCollapsed && <span>Sign Out</span>}
+            </button>
+          </div>
+        )}
 
         {/* Collapse toggle - desktop only */}
         <div className="hidden lg:flex border-t border-white/[0.06] p-3">
