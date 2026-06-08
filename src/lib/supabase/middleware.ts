@@ -37,9 +37,12 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Redirect unauthenticated users to login (except auth pages)
+  const isDemo = request.cookies.get("p72_demo_mode")?.value === "true";
+
+  // Redirect unauthenticated users to login (except auth pages or demo mode)
   if (
     !user &&
+    !isDemo &&
     !request.nextUrl.pathname.startsWith("/auth") &&
     !request.nextUrl.pathname.startsWith("/api")
   ) {
@@ -49,7 +52,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (user && request.nextUrl.pathname.startsWith("/auth")) {
+  if ((user || isDemo) && request.nextUrl.pathname.startsWith("/auth")) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
     return NextResponse.redirect(url);

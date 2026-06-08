@@ -203,6 +203,7 @@ export function Sidebar() {
           <div className="px-3 py-1 border-t border-white/[0.06]">
             <button
               onClick={async () => {
+                document.cookie = "p72_demo_mode=; path=/; expires=Thu, 01 Jan 1970 00:00:00 UTC";
                 const { createClient } = await import("@/lib/supabase/client");
                 const supabase = createClient();
                 await supabase.auth.signOut();

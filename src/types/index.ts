@@ -1,7 +1,18 @@
 // Re-export database types with friendlier aliases
-import type { Database } from "./database";
+import type { Database } from "@/types/database";
 
-export type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+export type Profile = Database["public"]["Tables"]["profiles"]["Row"] & {
+  occupation?: string | null;
+  fitness_experience?: "beginner" | "intermediate" | "advanced" | null;
+  workout_days_limit?: number | null;
+  workout_duration_limit?: number | null;
+  gym_access?: "home" | "gym" | "both" | null;
+  diet_preference?: "vegetarian" | "eggetarian" | "non_vegetarian" | "vegan" | null;
+  foods_to_avoid?: string | null;
+  allergies?: string | null;
+  budget_preference?: "low" | "medium" | "high" | null;
+  has_completed_onboarding?: boolean | null;
+};
 export type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 export type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
 
@@ -46,11 +57,104 @@ export type HabitLogInsert = Database["public"]["Tables"]["habit_logs"]["Insert"
 export type HealthMetric = Database["public"]["Tables"]["health_metrics"]["Row"];
 export type HealthMetricInsert = Database["public"]["Tables"]["health_metrics"]["Insert"];
 
-export type Goal = Database["public"]["Tables"]["goals"]["Row"];
-export type GoalInsert = Database["public"]["Tables"]["goals"]["Insert"];
-export type GoalUpdate = Database["public"]["Tables"]["goals"]["Update"];
+export interface Goal {
+  id: string;
+  user_id: string;
+  category: string;
+  title: string;
+  description: string | null;
+  target_value: number | null;
+  current_value: number | null;
+  unit: string | null;
+  start_date: string;
+  target_date: string | null;
+  status: "active" | "completed" | "archived";
+  created_at: string;
+  updated_at: string;
+}
 
-export type DailySummary = Database["public"]["Tables"]["daily_summaries"]["Row"];
+export interface UserGoal {
+  id: string;
+  user_id: string;
+  primary_goal: string;
+  target_weight: number | null;
+  target_date: string | null;
+  recommended_date: string | null;
+  recommended_weekly_change: number | null;
+  recommended_deficit: number | null;
+  created_at: string;
+}
+
+export interface NutritionTargets {
+  id: string;
+  user_id: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber: number;
+  water_ml: number;
+  steps: number;
+  sleep_hours: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIWorkoutPlan {
+  id: string;
+  user_id: string;
+  split_name: string;
+  weekly_split: any;
+  exercises: any;
+  progression_guidance: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIMealPlan {
+  id: string;
+  user_id: string;
+  meal_plan: any;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WeeklyReview {
+  id: string;
+  user_id: string;
+  start_date: string;
+  end_date: string;
+  weight_change: number | null;
+  workout_consistency: number | null;
+  protein_consistency: number | null;
+  calorie_adherence: number | null;
+  habit_completion: number | null;
+  avg_sleep: number | null;
+  avg_water: number | null;
+  avg_steps: number | null;
+  avg_compliance_score: number | null;
+  avg_calories: number | null;
+  avg_protein: number | null;
+  notes: string | null;
+  highlights: string[] | null;
+  lowlights: string[] | null;
+  next_actions: string[] | null;
+  ai_feedback: string | null;
+  created_at: string;
+}
+
+export interface Reminder {
+  id: string;
+  user_id: string;
+  reminder_type: "protein" | "water" | "workout" | "weight";
+  enabled: boolean;
+  time: string | null;
+  created_at: string;
+}
+
+export type DailySummary = Database["public"]["Tables"]["daily_summaries"]["Row"] & {
+  energy_level?: number | null;
+};
 export type DailySummaryInsert = Database["public"]["Tables"]["daily_summaries"]["Insert"];
 export type DailySummaryUpdate = Database["public"]["Tables"]["daily_summaries"]["Update"];
 

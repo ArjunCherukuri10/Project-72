@@ -62,8 +62,10 @@ export default function LoginPage() {
   };
 
   const handleDemoMode = () => {
+    document.cookie = "p72_demo_mode=true; path=/; max-age=31536000";
     toast.success("Continuing in Offline Demo Mode!");
     router.push("/");
+    router.refresh();
   };
 
   return (

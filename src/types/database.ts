@@ -25,6 +25,16 @@ export interface Database {
           theme: "light" | "dark" | "system";
           created_at: string;
           updated_at: string;
+          occupation: string | null;
+          fitness_experience: "beginner" | "intermediate" | "advanced" | null;
+          workout_days_limit: number | null;
+          workout_duration_limit: number | null;
+          gym_access: "home" | "gym" | "both" | null;
+          diet_preference: "vegetarian" | "eggetarian" | "non_vegetarian" | "vegan" | null;
+          foods_to_avoid: string | null;
+          allergies: string | null;
+          budget_preference: "low" | "medium" | "high" | null;
+          has_completed_onboarding: boolean | null;
         };
         Insert: {
           id: string;
@@ -41,6 +51,16 @@ export interface Database {
           theme?: "light" | "dark" | "system";
           created_at?: string;
           updated_at?: string;
+          occupation?: string | null;
+          fitness_experience?: "beginner" | "intermediate" | "advanced" | null;
+          workout_days_limit?: number | null;
+          workout_duration_limit?: number | null;
+          gym_access?: "home" | "gym" | "both" | null;
+          diet_preference?: "vegetarian" | "eggetarian" | "non_vegetarian" | "vegan" | null;
+          foods_to_avoid?: string | null;
+          allergies?: string | null;
+          budget_preference?: "low" | "medium" | "high" | null;
+          has_completed_onboarding?: boolean | null;
         };
         Update: {
           id?: string;
@@ -56,6 +76,16 @@ export interface Database {
           units?: "metric" | "imperial";
           theme?: "light" | "dark" | "system";
           updated_at?: string;
+          occupation?: string | null;
+          fitness_experience?: "beginner" | "intermediate" | "advanced" | null;
+          workout_days_limit?: number | null;
+          workout_duration_limit?: number | null;
+          gym_access?: "home" | "gym" | "both" | null;
+          diet_preference?: "vegetarian" | "eggetarian" | "non_vegetarian" | "vegan" | null;
+          foods_to_avoid?: string | null;
+          allergies?: string | null;
+          budget_preference?: "low" | "medium" | "high" | null;
+          has_completed_onboarding?: boolean | null;
         };
       };
       weight_logs: {
@@ -560,6 +590,7 @@ export interface Database {
           mood: number | null;
           notes: string | null;
           compliance_score: number | null;
+          energy_level: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -580,6 +611,7 @@ export interface Database {
           mood?: number | null;
           notes?: string | null;
           compliance_score?: number | null;
+          energy_level?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -597,6 +629,7 @@ export interface Database {
           mood?: number | null;
           notes?: string | null;
           compliance_score?: number | null;
+          energy_level?: number | null;
           updated_at?: string;
         };
       };
@@ -623,6 +656,187 @@ export interface Database {
         };
         Update: {
           unlocked_at?: string | null;
+        };
+      };
+      nutrition_targets: {
+        Row: {
+          id: string;
+          user_id: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+          fiber: number;
+          water_ml: number;
+          steps: number;
+          sleep_hours: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          calories: number;
+          protein: number;
+          carbs: number;
+          fat: number;
+          fiber: number;
+          water_ml?: number;
+          steps?: number;
+          sleep_hours?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          calories?: number;
+          protein?: number;
+          carbs?: number;
+          fat?: number;
+          fiber?: number;
+          water_ml?: number;
+          steps?: number;
+          sleep_hours?: number;
+          updated_at?: string;
+        };
+      };
+      ai_workout_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          split_name: string;
+          weekly_split: Json;
+          exercises: Json;
+          progression_guidance: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          split_name: string;
+          weekly_split: Json;
+          exercises: Json;
+          progression_guidance?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          split_name?: string;
+          weekly_split?: Json;
+          exercises?: Json;
+          progression_guidance?: string | null;
+          updated_at?: string;
+        };
+      };
+      ai_meal_plans: {
+        Row: {
+          id: string;
+          user_id: string;
+          meal_plan: Json;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          meal_plan: Json;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          meal_plan?: Json;
+          updated_at?: string;
+        };
+      };
+      weekly_reviews: {
+        Row: {
+          id: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          weight_change: number | null;
+          workout_consistency: number | null;
+          protein_consistency: number | null;
+          calorie_adherence: number | null;
+          habit_completion: number | null;
+          avg_sleep: number | null;
+          avg_water: number | null;
+          avg_steps: number | null;
+          avg_compliance_score: number | null;
+          avg_calories: number | null;
+          avg_protein: number | null;
+          notes: string | null;
+          highlights: string[] | null;
+          lowlights: string[] | null;
+          next_actions: string[] | null;
+          ai_feedback: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          start_date: string;
+          end_date: string;
+          weight_change?: number | null;
+          workout_consistency?: number | null;
+          protein_consistency?: number | null;
+          calorie_adherence?: number | null;
+          habit_completion?: number | null;
+          avg_sleep?: number | null;
+          avg_water?: number | null;
+          avg_steps?: number | null;
+          avg_compliance_score?: number | null;
+          avg_calories?: number | null;
+          avg_protein?: number | null;
+          notes?: string | null;
+          highlights?: string[] | null;
+          lowlights?: string[] | null;
+          next_actions?: string[] | null;
+          ai_feedback?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          start_date?: string;
+          end_date?: string;
+          weight_change?: number | null;
+          workout_consistency?: number | null;
+          protein_consistency?: number | null;
+          calorie_adherence?: number | null;
+          habit_completion?: number | null;
+          avg_sleep?: number | null;
+          avg_water?: number | null;
+          avg_steps?: number | null;
+          avg_compliance_score?: number | null;
+          avg_calories?: number | null;
+          avg_protein?: number | null;
+          notes?: string | null;
+          highlights?: string[] | null;
+          lowlights?: string[] | null;
+          next_actions?: string[] | null;
+          ai_feedback?: string | null;
+        };
+      };
+      reminders: {
+        Row: {
+          id: string;
+          user_id: string;
+          reminder_type: "protein" | "water" | "workout" | "weight";
+          enabled: boolean;
+          time: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          reminder_type: "protein" | "water" | "workout" | "weight";
+          enabled?: boolean;
+          time?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          reminder_type?: "protein" | "water" | "workout" | "weight";
+          enabled?: boolean;
+          time?: string | null;
         };
       };
     };

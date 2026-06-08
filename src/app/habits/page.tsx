@@ -25,7 +25,7 @@ export default function HabitsPage() {
 
   const toggleMutation = useMutation({
     mutationFn: async (habitId: string) => {
-      trackerService.toggleHabit(habitId, date);
+      await trackerService.toggleHabit(habitId, date);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["habitLogs", date] });

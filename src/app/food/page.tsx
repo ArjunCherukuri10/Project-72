@@ -42,7 +42,7 @@ export default function FoodDatabasePage() {
   });
 
   const favoriteMutation = useMutation({
-    mutationFn: async (id: string) => { trackerService.toggleFoodFavorite(id); },
+    mutationFn: async (id: string) => { await trackerService.toggleFoodFavorite(id); },
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["foodItems"] }); },
   });
 
