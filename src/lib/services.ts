@@ -1038,7 +1038,7 @@ export const trackerService = {
         updated_at: new Date().toISOString()
       };
 
-      const { data, error } = await sb.from("nutrition_targets").upsert(updatedData).select().single();
+      const { data, error } = await sb.from("nutrition_targets").upsert(updatedData, { onConflict: ["user_id"] }).select().single();
       if (error) throw error;
       return data;
     }

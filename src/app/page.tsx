@@ -95,18 +95,21 @@ export default function Dashboard() {
   const workoutCompleted = !!todaySummary?.workout_completed;
 
   // Calculate stats
-  const currentWeight = weightLogs[0]?.weight || profile?.starting_weight || 80.0;
-  const startingWeight = profile?.starting_weight || 80.0;
-  const goalWeight = profile?.goal_weight || 72.0;
-  const weightLost = startingWeight - currentWeight;
+  const latestWeightLog = useMemo(() => {
+  if (!weightLogs || weightLogs.length === 0) return null;
+  return weightLogs.reduce((latest, log) => new Date(log.date) > new Date(latest.date) ? log : latest, weightLogs[0]);
+}, [weightLogs]);
+
+const currentWeight = latestWeightLog?.weight ?? profile?.starting_weight ?? 80.0;
+const startingWeight = profile?.starting_weight ?? 80.0;
+const goalWeight = profile?.goal_weight ?? 72.0;
+const weightLost = startingWeight - currentWeight;
   const weightRemaining = Math.max(0, currentWeight - goalWeight);
   const heightCm = profile?.height_cm || 175;
   const bmi = calculateBMI(currentWeight, heightCm);
 
   // Dynamic estimated goal date based on rate
-  const weeklyWeightChangeRate = profile?.starting_weight && profile?.goal_weight
-    ? (profile.starting_weight > profile.goal_weight ? 0.5 : -0.2) // 0.5kg/week loss or 0.2kg/week gain
-    : 0.5;
+  const weeklyWeightChangeRate = currentWeight > goalWeight ? 0.5 : 0.2; // 0.5kg/week loss or 0.2kg/week gain
 
   const estimatedGoalDateObj = useMemo(() => {
     return estimateGoalDate(currentWeight, goalWeight, weeklyWeightChangeRate);
