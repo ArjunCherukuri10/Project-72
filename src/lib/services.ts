@@ -1118,11 +1118,16 @@ export const trackerService = {
     const uid = await getUserId();
     if (uid) {
       const sb = getSupabase()!;
+      // Build a flat exercises list from weekly_split if top-level exercises not provided
+      const exercises = plan.exercises || (plan.weekly_split || [])
+        .filter((d: any) => d.type !== "rest" && d.exercises)
+        .flatMap((d: any) => d.exercises.map((ex: any) => ({ ...ex, day: d.day, split: d.type })));
+
       const { data, error } = await sb.from("ai_workout_plans").upsert({
         user_id: uid,
         split_name: plan.split_name,
         weekly_split: plan.weekly_split,
-        exercises: plan.exercises,
+        exercises: exercises,
         progression_guidance: plan.progression_guidance,
         updated_at: new Date().toISOString()
       }).select().single();
