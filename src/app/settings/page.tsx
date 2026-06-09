@@ -34,6 +34,11 @@ export default function SettingsPage() {
   const [activityLevel, setActivityLevel] = useState("moderate");
   const [dietPreference, setDietPreference] = useState("non_vegetarian");
   const [budgetPreference, setBudgetPreference] = useState("medium");
+  const [primaryGoal, setPrimaryGoal] = useState("Lose Weight");
+  const [targetDate, setTargetDate] = useState("");
+  const [recommendedDate, setRecommendedDate] = useState("");
+  const [recommendedWeeklyChange, setRecommendedWeeklyChange] = useState("0.5");
+  const [recommendedDeficit, setRecommendedDeficit] = useState("500");
 
   // Override targets state
   const [useCustomTargets, setUseCustomTargets] = useState(false);
@@ -76,6 +81,11 @@ export default function SettingsPage() {
         setGymAccess(profile.gym_access || "both");
         setAllergies(profile.allergies || "");
         setFoodsToAvoid(profile.foods_to_avoid || "");
+        setPrimaryGoal(profile.primary_goal || "Lose Weight");
+        setTargetDate(profile.target_date || "");
+        setRecommendedDate(profile.recommended_date || "");
+        setRecommendedWeeklyChange(profile.recommended_weekly_change?.toString() || "0.5");
+        setRecommendedDeficit(profile.recommended_deficit?.toString() || "500");
       }
       if (targets) {
         setUseCustomTargets(!!(targets as any).use_custom_targets);
@@ -113,6 +123,11 @@ export default function SettingsPage() {
         allergies: allergies || null,
         foods_to_avoid: foodsToAvoid || null,
         has_completed_onboarding: true,
+        primary_goal: primaryGoal,
+        target_date: targetDate || null,
+        recommended_date: recommendedDate || null,
+        recommended_weekly_change: parseFloat(recommendedWeeklyChange) || 0.5,
+        recommended_deficit: parseInt(recommendedDeficit) || 500,
       };
 
       await trackerService.updateProfile(updatedProfile);
@@ -328,6 +343,48 @@ export default function SettingsPage() {
                   <option value="medium">Standard</option>
                   <option value="high">Premium / Organic</option>
                 </select>
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="sPrimaryGoal">Primary Goal</Label>
+                <select
+                  id="sPrimaryGoal"
+                  className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  value={primaryGoal}
+                  onChange={(e) => setPrimaryGoal(e.target.value)}
+                >
+                  <option value="Lose Weight">Lose Weight</option>
+                  <option value="Build Muscle">Build Muscle</option>
+                  <option value="Body Recomposition">Body Recomposition</option>
+                  <option value="Improve Fitness">Improve Fitness</option>
+                  <option value="Improve Health">Improve Health</option>
+                  <option value="Maintain Weight">Maintain Weight</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-1">
+                <Label htmlFor="sTargetDate">Target Date</Label>
+                <Input
+                  id="sTargetDate"
+                  type="date"
+                  value={targetDate}
+                  onChange={(e) => setTargetDate(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="sRecommendedWeeklyChange">Recommended Weekly Change (kg)</Label>
+                <Input
+                  id="sRecommendedWeeklyChange"
+                  type="number"
+                  step="0.1"
+                  value={recommendedWeeklyChange}
+                  onChange={(e) => setRecommendedWeeklyChange(e.target.value)}
+                  className="bg-zinc-900 border-white/10"
+                />
               </div>
             </div>
 

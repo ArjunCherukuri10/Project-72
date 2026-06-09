@@ -191,8 +191,16 @@ const weightLost = startingWeight - currentWeight;
   // Save onboarding mutation
   const saveOnboardingMutation = useMutation({
     mutationFn: async (data: any) => {
-      // 1. Update Profile
-      await trackerService.updateProfile(data.profile);
+      // 1. Update Profile (incorporating all onboarding goal data)
+      const completeProfile = {
+        ...data.profile,
+        primary_goal: data.goal.primary_goal,
+        target_date: data.goal.target_date,
+        recommended_date: data.goal.recommended_date,
+        recommended_weekly_change: data.goal.recommended_weekly_change,
+        recommended_deficit: data.goal.recommended_deficit,
+      };
+      await trackerService.updateProfile(completeProfile);
       // 2. Update Nutrition targets
       await trackerService.updateNutritionTargets({
         calories: data.targets.calories,

@@ -35,6 +35,11 @@ export interface Database {
           allergies: string | null;
           budget_preference: "low" | "medium" | "high" | null;
           has_completed_onboarding: boolean | null;
+          primary_goal: string | null;
+          target_date: string | null;
+          recommended_date: string | null;
+          recommended_weekly_change: number | null;
+          recommended_deficit: number | null;
         };
         Insert: {
           id: string;
@@ -61,6 +66,11 @@ export interface Database {
           allergies?: string | null;
           budget_preference?: "low" | "medium" | "high" | null;
           has_completed_onboarding?: boolean | null;
+          primary_goal?: string | null;
+          target_date?: string | null;
+          recommended_date?: string | null;
+          recommended_weekly_change?: number | null;
+          recommended_deficit?: number | null;
         };
         Update: {
           id?: string;
@@ -86,6 +96,11 @@ export interface Database {
           allergies?: string | null;
           budget_preference?: "low" | "medium" | "high" | null;
           has_completed_onboarding?: boolean | null;
+          primary_goal?: string | null;
+          target_date?: string | null;
+          recommended_date?: string | null;
+          recommended_weekly_change?: number | null;
+          recommended_deficit?: number | null;
         };
       };
       weight_logs: {

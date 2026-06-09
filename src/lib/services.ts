@@ -145,6 +145,11 @@ export const trackerService = {
           starting_weight: 94.00,
           units: "metric",
           theme: "dark",
+          primary_goal: "Lose Weight",
+          target_date: null,
+          recommended_date: null,
+          recommended_weekly_change: 0.5,
+          recommended_deficit: 500,
         };
 
         const { data: inserted, error: insertError } = await sb
