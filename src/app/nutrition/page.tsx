@@ -187,6 +187,7 @@ export default function NutritionPage() {
       const carb = Math.round(item.carbs * ratio * 10) / 10;
       const fat = Math.round(item.fat * ratio * 10) / 10;
       const fib = Math.round(item.fiber * ratio * 10) / 10;
+      const roundedVal = Math.round(item.currentValue * 10) / 10;
 
       await trackerService.addMealItem(date, selectedMeal, `ai-${Date.now()}`, 1, {
         calories: cal,
@@ -194,7 +195,7 @@ export default function NutritionPage() {
         carbs: carb,
         fat: fat,
         fiber: fib,
-        food: { name: `${item.name} (${item.currentValue} ${item.unit})` },
+        food: { name: `${item.name} (${roundedVal} ${item.unit})` },
       });
       queryClient.invalidateQueries({ queryKey: ["mealsToday", date] });
       queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
@@ -503,7 +504,14 @@ export default function NutritionPage() {
                           <div key={item.id} className="flex items-center justify-between p-2 rounded-xl bg-white/[0.01] border border-white/[0.04] text-xs group">
                             <div>
                               <span className="font-semibold text-white">{item.food?.name || "Food"}</span>
-                              <span className="text-white/40 ml-2">×{item.servings}</span>
+                              <span className="text-white/40 ml-2">
+                                {isCountable(item.food?.serving_size || "") 
+                                  ? `×${Math.round(item.servings * 100) / 100}` 
+                                  : (item.food?.serving_size === "1 serving" || item.food?.name?.includes("("))
+                                    ? (item.servings === 1 ? null : `×${Math.round(item.servings * 100) / 100}`)
+                                    : `${Math.round(item.servings * 10) / 10}g`
+                                }
+                              </span>
                             </div>
                             <div className="flex items-center gap-2">
                               <span className="text-white/50">{item.calories} kcal</span>
