@@ -3,16 +3,41 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Dumbbell, Sparkles, Plus, Check, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, Dumbbell, Sparkles, Check, RefreshCw, Settings2, ChevronDown, ChevronUp } from "lucide-react";
 import { trackerService } from "@/lib/services";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Profile } from "@/types";
 
+interface WorkoutPreferences {
+  goal: string;
+  experience: string;
+  days: number;
+  duration: number;
+  gymAccess: string;
+  splitPreference: string;
+  focusAreas: string;
+  injuries: string;
+}
+
 export default function AIWorkoutPlannerView() {
   const queryClient = useQueryClient();
   const [activeDay, setActiveDay] = useState("Monday");
   const [generating, setGenerating] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+
+  const [prefs, setPrefs] = useState<WorkoutPreferences>({
+    goal: "Weight Loss",
+    experience: "beginner",
+    days: 4,
+    duration: 45,
+    gymAccess: "both",
+    splitPreference: "auto",
+    focusAreas: "",
+    injuries: "",
+  });
 
   // Queries
   const { data: profile } = useQuery<Profile | null>({
@@ -25,14 +50,39 @@ export default function AIWorkoutPlannerView() {
     queryFn: trackerService.getAIWorkoutPlan,
   });
 
-  // Automatically select the current day of the week
+  // Sync prefs from profile on first load
+  useEffect(() => {
+    if (profile) {
+      setPrefs((p) => ({
+        ...p,
+        goal:
+          profile.primary_goal ||
+          (profile.goal_weight && profile.starting_weight && profile.starting_weight > profile.goal_weight
+            ? "Weight Loss"
+            : "Muscle Gain"),
+        experience: profile.fitness_experience || "beginner",
+        days: profile.workout_days_limit || 4,
+        duration: profile.workout_duration_limit || 45,
+        gymAccess: profile.gym_access || "both",
+      }));
+    }
+  }, [profile]);
+
+  // Auto-select current day
   useEffect(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const currentDay = days[new Date().getDay()];
     setTimeout(() => {
-      setActiveDay(currentDay === "Sunday" ? "Monday" : currentDay); // default to Monday if Sunday rest
+      setActiveDay(currentDay === "Sunday" ? "Monday" : currentDay);
     }, 0);
   }, []);
+
+  // Show the preferences form if there's no plan yet
+  useEffect(() => {
+    if (!isLoading && !plan) {
+      setShowPrefs(true);
+    }
+  }, [isLoading, plan]);
 
   // Generate Workout Mutation
   const generateWorkoutPlan = async () => {
@@ -47,12 +97,15 @@ export default function AIWorkoutPlannerView() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          goal: profile.goal_weight && profile.starting_weight && profile.starting_weight > profile.goal_weight ? "Weight Loss" : "Muscle Gain",
-          experience: profile.fitness_experience || "beginner",
-          days: profile.workout_days_limit || 4,
-          duration: profile.workout_duration_limit || 45,
-          gymAccess: profile.gym_access || "both"
-        })
+          goal: prefs.goal,
+          experience: prefs.experience,
+          days: prefs.days,
+          duration: prefs.duration,
+          gymAccess: prefs.gymAccess,
+          splitPreference: prefs.splitPreference,
+          focusAreas: prefs.focusAreas,
+          injuries: prefs.injuries,
+        }),
       });
 
       if (!response.ok) {
@@ -63,6 +116,7 @@ export default function AIWorkoutPlannerView() {
       await trackerService.saveAIWorkoutPlan(newPlan);
       queryClient.invalidateQueries({ queryKey: ["aiWorkoutPlan"] });
       toast.success("AI Workout Plan generated successfully!");
+      setShowPrefs(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to generate plan");
     } finally {
@@ -81,10 +135,10 @@ export default function AIWorkoutPlannerView() {
         name: workout.name,
         type: workout.type,
         date: new Date().toISOString().split("T")[0],
-        duration_minutes: profile?.workout_duration_limit || 45,
+        duration_minutes: prefs.duration || 45,
         notes: `AI Generated ${workout.name}\nExercises:\n${exerciseSummary}`,
         completed: true,
-        template_id: null
+        template_id: null,
       });
     },
     onSuccess: () => {
@@ -94,7 +148,7 @@ export default function AIWorkoutPlannerView() {
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to log workout");
-    }
+    },
   });
 
   const activeDayWorkout = plan?.weekly_split?.find((d: any) => d.day === activeDay);
@@ -108,6 +162,151 @@ export default function AIWorkoutPlannerView() {
     );
   }
 
+  // ─── Preference Form ───
+  const PreferencesForm = () => (
+    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* Goal */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-goal" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Primary Goal</Label>
+          <select
+            id="wp-goal"
+            value={prefs.goal}
+            onChange={(e) => setPrefs({ ...prefs, goal: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value="Weight Loss">Weight Loss</option>
+            <option value="Muscle Gain">Muscle Gain</option>
+            <option value="Strength">Strength</option>
+            <option value="Athletic Performance">Athletic Performance</option>
+            <option value="General Fitness">General Fitness</option>
+            <option value="Body Recomposition">Body Recomposition</option>
+          </select>
+        </div>
+
+        {/* Experience */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-exp" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Experience Level</Label>
+          <select
+            id="wp-exp"
+            value={prefs.experience}
+            onChange={(e) => setPrefs({ ...prefs, experience: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value="beginner">Beginner (0–6 months)</option>
+            <option value="intermediate">Intermediate (6–24 months)</option>
+            <option value="advanced">Advanced (2+ years)</option>
+          </select>
+        </div>
+
+        {/* Days per week */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-days" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Training Days / Week</Label>
+          <select
+            id="wp-days"
+            value={prefs.days}
+            onChange={(e) => setPrefs({ ...prefs, days: parseInt(e.target.value) })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value={2}>2 days</option>
+            <option value={3}>3 days</option>
+            <option value={4}>4 days</option>
+            <option value={5}>5 days</option>
+            <option value={6}>6 days</option>
+          </select>
+        </div>
+
+        {/* Duration per session */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-dur" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Session Duration</Label>
+          <select
+            id="wp-dur"
+            value={prefs.duration}
+            onChange={(e) => setPrefs({ ...prefs, duration: parseInt(e.target.value) })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value={30}>30 minutes</option>
+            <option value={45}>45 minutes</option>
+            <option value={60}>60 minutes</option>
+            <option value={75}>75 minutes</option>
+            <option value={90}>90 minutes</option>
+          </select>
+        </div>
+
+        {/* Equipment / Gym Access */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-gym" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Equipment Access</Label>
+          <select
+            id="wp-gym"
+            value={prefs.gymAccess}
+            onChange={(e) => setPrefs({ ...prefs, gymAccess: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value="home">Home (Bodyweight / Dumbbells)</option>
+            <option value="gym">Full Gym</option>
+            <option value="both">Both (Home + Gym)</option>
+          </select>
+        </div>
+
+        {/* Split Preference */}
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-split" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Split Preference</Label>
+          <select
+            id="wp-split"
+            value={prefs.splitPreference}
+            onChange={(e) => setPrefs({ ...prefs, splitPreference: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-violet-500"
+          >
+            <option value="auto">Auto (AI decides best split)</option>
+            <option value="ppl">Push / Pull / Legs</option>
+            <option value="upper_lower">Upper / Lower</option>
+            <option value="full_body">Full Body</option>
+            <option value="bro_split">Bro Split (Chest, Back, Shoulders, Arms, Legs)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Optional fields */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-focus" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Focus Areas <span className="text-white/20">(optional)</span></Label>
+          <Input
+            id="wp-focus"
+            placeholder="e.g. chest, glutes, back"
+            value={prefs.focusAreas}
+            onChange={(e) => setPrefs({ ...prefs, focusAreas: e.target.value })}
+            className="bg-zinc-900 border-white/10"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="wp-inj" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Injuries / Limitations <span className="text-white/20">(optional)</span></Label>
+          <Input
+            id="wp-inj"
+            placeholder="e.g. lower back pain, bad knee"
+            value={prefs.injuries}
+            onChange={(e) => setPrefs({ ...prefs, injuries: e.target.value })}
+            className="bg-zinc-900 border-white/10"
+          />
+        </div>
+      </div>
+
+      <div className="pt-1">
+        <Button
+          onClick={generateWorkoutPlan}
+          disabled={generating}
+          className="w-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-sm h-10 font-semibold"
+        >
+          {generating ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-1.5" />
+          )}
+          {plan ? "Regenerate Workout Plan" : "Generate My Workout Plan"}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <Card className="bg-white/[0.02] border-white/[0.06] shadow-xl">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-white/[0.06]">
@@ -117,27 +316,31 @@ export default function AIWorkoutPlannerView() {
             AI Personalized Workout Plan
           </CardTitle>
           <CardDescription>
-            {plan ? `Current split: ${plan.split_name}` : "Generate a custom routine tailored to your goals & availability."}
+            {plan ? `Current split: ${plan.split_name}` : "Configure your preferences and generate a custom routine."}
           </CardDescription>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={generating}
-          onClick={generateWorkoutPlan}
-          className="border-violet-500/30 text-violet-300 hover:bg-violet-500/10 h-8 text-xs"
-        >
-          {generating ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-          )}
-          {plan ? "Regenerate" : "Generate Plan"}
-        </Button>
+        {plan && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowPrefs(!showPrefs)}
+            className="border-violet-500/30 text-violet-300 hover:bg-violet-500/10 h-8 text-xs"
+          >
+            {showPrefs ? (
+              <ChevronUp className="h-3.5 w-3.5 mr-1.5" />
+            ) : (
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {showPrefs ? "Hide Preferences" : "Customize & Regenerate"}
+          </Button>
+        )}
       </CardHeader>
 
       {plan ? (
         <CardContent className="p-6 space-y-6">
+          {/* Preference form (collapsible) */}
+          {showPrefs && <PreferencesForm />}
+
           {/* Day selectors */}
           <div className="flex flex-wrap gap-1.5 bg-white/[0.02] p-1 rounded-xl">
             {plan.weekly_split.map((d: any) => {
@@ -234,24 +437,15 @@ export default function AIWorkoutPlannerView() {
           )}
         </CardContent>
       ) : (
-        <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-          <Dumbbell className="h-10 w-10 text-white/20" />
-          <span className="font-bold text-sm text-white">No active training split</span>
-          <p className="text-xs text-white/40 max-w-sm">
-            Generate a personalized workout split. The planner takes into account your experience level, access, and schedule constraints.
-          </p>
-          <Button
-            onClick={generateWorkoutPlan}
-            disabled={generating}
-            className="bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-xs h-9"
-          >
-            {generating ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
-            )}
-            Build custom training routine
-          </Button>
+        <CardContent className="p-6 space-y-6">
+          <div className="text-center pb-2">
+            <Dumbbell className="h-10 w-10 text-white/20 mx-auto mb-2" />
+            <span className="font-bold text-sm text-white block">Configure Your Training Preferences</span>
+            <p className="text-xs text-white/40 max-w-sm mx-auto mt-1">
+              Set your goals, schedule, and equipment access — the AI builds a personalized split around you.
+            </p>
+          </div>
+          <PreferencesForm />
         </CardContent>
       )}
     </Card>

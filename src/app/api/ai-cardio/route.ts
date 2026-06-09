@@ -35,12 +35,15 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { goal, experience, days, duration } = body;
+    const { goal, experience, days, duration, preferredActivities, cardioStyle, healthConditions } = body;
+
+    const styleLabel = cardioStyle === "auto" ? "Auto (you decide the best mix)" : cardioStyle === "liss_only" ? "LISS Only (Steady State)" : cardioStyle === "hiit_only" ? "HIIT Only (Intervals)" : cardioStyle === "mixed" ? "Mixed LISS + HIIT" : cardioStyle === "sport_specific" ? "Sport-Specific Conditioning" : "Auto";
 
     const userPrompt = `Goal: ${goal}
 Experience: ${experience}
 Cardio frequency: ${days} days per week
-Preferred session duration: ${duration} minutes`;
+Preferred session duration: ${duration} minutes
+Cardio Style Preference: ${styleLabel}${preferredActivities ? `\nPreferred Activities (use these when possible): ${preferredActivities}` : ""}${healthConditions ? `\nHealth Conditions / Limitations (plan around these): ${healthConditions}` : ""}`;
 
     let text = "";
     const isOpenRouter = GEMINI_API_KEY.startsWith("sk-or-");

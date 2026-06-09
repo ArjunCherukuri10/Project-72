@@ -40,13 +40,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { goal, experience, days, duration, gymAccess } = body;
+    const { goal, experience, days, duration, gymAccess, splitPreference, focusAreas, injuries } = body;
 
     const userPrompt = `Goal: ${goal}
 Experience: ${experience}
 Days available: ${days} days per week
 Duration per workout: ${duration} minutes
-Equipment/Gym Access: ${gymAccess}`;
+Equipment/Gym Access: ${gymAccess}
+Split Preference: ${splitPreference === "auto" ? "You decide the best split for the above parameters" : splitPreference === "ppl" ? "Push / Pull / Legs" : splitPreference === "upper_lower" ? "Upper / Lower" : splitPreference === "full_body" ? "Full Body" : splitPreference === "bro_split" ? "Bro Split (Chest, Back, Shoulders, Arms, Legs)" : "Auto"}${focusAreas ? `\nFocus Areas (prioritize these muscle groups): ${focusAreas}` : ""}${injuries ? `\nInjuries / Limitations (avoid exercises that aggravate these): ${injuries}` : ""}`;
 
     let text = "";
     const isOpenRouter = GEMINI_API_KEY.startsWith("sk-or-");

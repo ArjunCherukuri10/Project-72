@@ -3,16 +3,39 @@
 import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, HeartPulse, Sparkles, Check, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Loader2, HeartPulse, Sparkles, Check, RefreshCw, Settings2, ChevronUp } from "lucide-react";
 import { trackerService } from "@/lib/services";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import type { Profile, AICardioPlan } from "@/types";
 
+interface CardioPreferences {
+  goal: string;
+  experience: string;
+  days: number;
+  duration: number;
+  preferredActivities: string;
+  cardioStyle: string;
+  healthConditions: string;
+}
+
 export default function AICardioPlannerView() {
   const queryClient = useQueryClient();
   const [activeDay, setActiveDay] = useState("Monday");
   const [generating, setGenerating] = useState(false);
+  const [showPrefs, setShowPrefs] = useState(false);
+
+  const [prefs, setPrefs] = useState<CardioPreferences>({
+    goal: "Weight Loss",
+    experience: "beginner",
+    days: 3,
+    duration: 30,
+    preferredActivities: "",
+    cardioStyle: "auto",
+    healthConditions: "",
+  });
 
   // Queries
   const { data: profile } = useQuery<Profile | null>({
@@ -25,6 +48,20 @@ export default function AICardioPlannerView() {
     queryFn: trackerService.getAICardioPlan as any,
   });
 
+  // Sync prefs from profile on first load
+  useEffect(() => {
+    if (profile) {
+      const cardioDays = profile.workout_days_limit ? Math.max(1, 7 - profile.workout_days_limit) : 3;
+      setPrefs((p) => ({
+        ...p,
+        goal: profile.primary_goal || "Weight Loss",
+        experience: profile.fitness_experience || "beginner",
+        days: cardioDays,
+        duration: profile.workout_duration_limit || 30,
+      }));
+    }
+  }, [profile]);
+
   // Automatically select the current day of the week
   useEffect(() => {
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -33,6 +70,13 @@ export default function AICardioPlannerView() {
       setActiveDay(currentDay);
     }, 0);
   }, []);
+
+  // Show prefs form if no plan exists
+  useEffect(() => {
+    if (!isLoading && !plan) {
+      setShowPrefs(true);
+    }
+  }, [isLoading, plan]);
 
   // Generate Cardio Plan
   const generateCardioPlan = async () => {
@@ -43,19 +87,18 @@ export default function AICardioPlannerView() {
 
     setGenerating(true);
     try {
-      // Determine cardio frequency and preferred duration from profile or defaults
-      const cardioDays = profile.workout_days_limit ? Math.max(1, 7 - profile.workout_days_limit) : 3; // e.g. 7 - 4 strength days = 3 cardio days
-      const cardioDuration = profile.workout_duration_limit || 30;
-
       const response = await fetch("/api/ai-cardio", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          goal: profile.primary_goal || "Improve Fitness",
-          experience: profile.fitness_experience || "beginner",
-          days: cardioDays,
-          duration: cardioDuration,
-        })
+          goal: prefs.goal,
+          experience: prefs.experience,
+          days: prefs.days,
+          duration: prefs.duration,
+          preferredActivities: prefs.preferredActivities,
+          cardioStyle: prefs.cardioStyle,
+          healthConditions: prefs.healthConditions,
+        }),
       });
 
       if (!response.ok) {
@@ -66,6 +109,7 @@ export default function AICardioPlannerView() {
       await trackerService.saveAICardioPlan(newPlan);
       queryClient.invalidateQueries({ queryKey: ["aiCardioPlan"] });
       toast.success("AI Cardio Plan generated successfully!");
+      setShowPrefs(false);
     } catch (err: any) {
       toast.error(err.message || "Failed to generate cardio plan");
     } finally {
@@ -76,7 +120,6 @@ export default function AICardioPlannerView() {
   // Log cardio session today
   const logCardioMutation = useMutation({
     mutationFn: async (cardio: any) => {
-      // Map activity types to match CardioType: walking, running, cycling, treadmill, stair_climber, swimming, custom
       const activityLower = (cardio.activity || "").toLowerCase();
       let type: any = "custom";
       if (activityLower.includes("walk")) type = "walking";
@@ -93,7 +136,7 @@ export default function AICardioPlannerView() {
         distance_km: null,
         calories_burned: cardio.target_calories || null,
         avg_pace: null,
-        notes: `AI Session: ${cardio.type}\nIntensity: ${cardio.intensity}\nActivity: ${cardio.activity}\n\nCoaching Tips: ${cardio.description}`
+        notes: `AI Session: ${cardio.type}\nIntensity: ${cardio.intensity}\nActivity: ${cardio.activity}\n\nCoaching Tips: ${cardio.description}`,
       });
     },
     onSuccess: () => {
@@ -103,7 +146,7 @@ export default function AICardioPlannerView() {
     },
     onError: (err: any) => {
       toast.error(err.message || "Failed to log activity");
-    }
+    },
   });
 
   const activeDayCardio = plan?.weekly_split?.find((d: any) => d.day === activeDay);
@@ -118,6 +161,137 @@ export default function AICardioPlannerView() {
     );
   }
 
+  // ─── Preference Form ───
+  const PreferencesForm = () => (
+    <div className="space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
+      <div className="grid gap-3 sm:grid-cols-2">
+        {/* Goal */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-goal" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Primary Goal</Label>
+          <select
+            id="cp-goal"
+            value={prefs.goal}
+            onChange={(e) => setPrefs({ ...prefs, goal: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="Weight Loss">Weight Loss / Fat Burn</option>
+            <option value="Cardiovascular Endurance">Cardiovascular Endurance</option>
+            <option value="General Fitness">General Fitness</option>
+            <option value="Athletic Performance">Athletic Performance</option>
+            <option value="Active Recovery">Active Recovery (Minimal)</option>
+          </select>
+        </div>
+
+        {/* Experience */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-exp" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Fitness Level</Label>
+          <select
+            id="cp-exp"
+            value={prefs.experience}
+            onChange={(e) => setPrefs({ ...prefs, experience: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="beginner">Beginner</option>
+            <option value="intermediate">Intermediate</option>
+            <option value="advanced">Advanced</option>
+          </select>
+        </div>
+
+        {/* Cardio days per week */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-days" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Cardio Days / Week</Label>
+          <select
+            id="cp-days"
+            value={prefs.days}
+            onChange={(e) => setPrefs({ ...prefs, days: parseInt(e.target.value) })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value={2}>2 days</option>
+            <option value={3}>3 days</option>
+            <option value={4}>4 days</option>
+            <option value={5}>5 days</option>
+            <option value={6}>6 days</option>
+            <option value={7}>7 days (daily)</option>
+          </select>
+        </div>
+
+        {/* Duration */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-dur" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Session Duration</Label>
+          <select
+            id="cp-dur"
+            value={prefs.duration}
+            onChange={(e) => setPrefs({ ...prefs, duration: parseInt(e.target.value) })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value={15}>15 minutes</option>
+            <option value={20}>20 minutes</option>
+            <option value={30}>30 minutes</option>
+            <option value={40}>40 minutes</option>
+            <option value={45}>45 minutes</option>
+            <option value={60}>60 minutes</option>
+          </select>
+        </div>
+
+        {/* Cardio Style */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-style" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Preferred Style</Label>
+          <select
+            id="cp-style"
+            value={prefs.cardioStyle}
+            onChange={(e) => setPrefs({ ...prefs, cardioStyle: e.target.value })}
+            className="flex h-10 w-full rounded-xl border border-white/[0.08] bg-zinc-900 px-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+          >
+            <option value="auto">Auto (AI decides mix)</option>
+            <option value="liss_only">LISS Only (Steady State)</option>
+            <option value="hiit_only">HIIT Only (Intervals)</option>
+            <option value="mixed">Mixed LISS + HIIT</option>
+            <option value="sport_specific">Sport-Specific Conditioning</option>
+          </select>
+        </div>
+
+        {/* Preferred Activities */}
+        <div className="space-y-1.5">
+          <Label htmlFor="cp-act" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Preferred Activities <span className="text-white/20">(optional)</span></Label>
+          <Input
+            id="cp-act"
+            placeholder="e.g. running, cycling, swimming"
+            value={prefs.preferredActivities}
+            onChange={(e) => setPrefs({ ...prefs, preferredActivities: e.target.value })}
+            className="bg-zinc-900 border-white/10"
+          />
+        </div>
+      </div>
+
+      {/* Health conditions */}
+      <div className="space-y-1.5">
+        <Label htmlFor="cp-health" className="text-[11px] font-bold text-white/50 uppercase tracking-wider">Health Conditions <span className="text-white/20">(optional)</span></Label>
+        <Input
+          id="cp-health"
+          placeholder="e.g. asthma, knee issues, heart condition"
+          value={prefs.healthConditions}
+          onChange={(e) => setPrefs({ ...prefs, healthConditions: e.target.value })}
+          className="bg-zinc-900 border-white/10"
+        />
+      </div>
+
+      <div className="pt-1">
+        <Button
+          onClick={generateCardioPlan}
+          disabled={generating}
+          className="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-sm h-10 font-semibold"
+        >
+          {generating ? (
+            <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+          ) : (
+            <Sparkles className="h-4 w-4 mr-1.5" />
+          )}
+          {plan ? "Regenerate Cardio Plan" : "Generate My Cardio Plan"}
+        </Button>
+      </div>
+    </div>
+  );
+
   return (
     <Card className="bg-white/[0.02] border-white/[0.06] shadow-xl">
       <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-white/[0.06]">
@@ -127,27 +301,31 @@ export default function AICardioPlannerView() {
             AI Personalized Cardio Plan
           </CardTitle>
           <CardDescription>
-            {plan ? `Current plan: ${plan.plan_name}` : "Create a custom aerobic plan tailored to your health objectives."}
+            {plan ? `Current plan: ${plan.plan_name}` : "Configure your cardio preferences and generate a custom plan."}
           </CardDescription>
         </div>
-        <Button
-          size="sm"
-          variant="outline"
-          disabled={generating}
-          onClick={generateCardioPlan}
-          className="border-sky-500/30 text-sky-300 hover:bg-sky-500/10 h-8 text-xs"
-        >
-          {generating ? (
-            <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
-          ) : (
-            <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
-          )}
-          {plan ? "Regenerate" : "Generate Plan"}
-        </Button>
+        {plan && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setShowPrefs(!showPrefs)}
+            className="border-sky-500/30 text-sky-300 hover:bg-sky-500/10 h-8 text-xs"
+          >
+            {showPrefs ? (
+              <ChevronUp className="h-3.5 w-3.5 mr-1.5" />
+            ) : (
+              <Settings2 className="h-3.5 w-3.5 mr-1.5" />
+            )}
+            {showPrefs ? "Hide Preferences" : "Customize & Regenerate"}
+          </Button>
+        )}
       </CardHeader>
 
       {plan ? (
         <CardContent className="p-6 space-y-6">
+          {/* Preference form (collapsible) */}
+          {showPrefs && <PreferencesForm />}
+
           {/* Day selectors */}
           <div className="flex flex-wrap gap-1.5 bg-white/[0.02] p-1 rounded-xl">
             {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map((dayName) => {
@@ -215,7 +393,6 @@ export default function AICardioPlannerView() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {/* Cardio details block */}
                   <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-4 space-y-3">
                     <div className="flex flex-wrap items-center justify-between gap-4 border-b border-white/[0.04] pb-3">
                       <div>
@@ -254,24 +431,15 @@ export default function AICardioPlannerView() {
           )}
         </CardContent>
       ) : (
-        <CardContent className="p-10 flex flex-col items-center justify-center text-center gap-3">
-          <HeartPulse className="h-10 w-10 text-white/20" />
-          <span className="font-bold text-sm text-white">No active cardio split</span>
-          <p className="text-xs text-white/40 max-w-sm">
-            Generate an AI-driven weekly cardio plan tailored to your profile goals, fitness experience, and schedule constraints.
-          </p>
-          <Button
-            onClick={generateCardioPlan}
-            disabled={generating}
-            className="bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-xs h-9 font-semibold"
-          >
-            {generating ? (
-              <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5 mr-1" />
-            )}
-            Build custom cardio plan
-          </Button>
+        <CardContent className="p-6 space-y-6">
+          <div className="text-center pb-2">
+            <HeartPulse className="h-10 w-10 text-white/20 mx-auto mb-2" />
+            <span className="font-bold text-sm text-white block">Configure Your Cardio Preferences</span>
+            <p className="text-xs text-white/40 max-w-sm mx-auto mt-1">
+              Set your cardio goals, available days, preferred activities, and session style — the AI builds your weekly conditioning plan.
+            </p>
+          </div>
+          <PreferencesForm />
         </CardContent>
       )}
     </Card>
