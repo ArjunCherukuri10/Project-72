@@ -96,12 +96,12 @@ export default function Dashboard() {
     return summaries.find((s) => s.date === todayStr) || null;
   }, [summaries, todayStr]);
 
-  const todayCalories = todaySummary?.total_calories || 0;
-  const todayProtein = todaySummary?.total_protein || 0;
-  const todayFiber = todaySummary?.total_fiber || 0;
-  const todayWater = todaySummary?.water_ml || 0;
-  const todaySteps = todaySummary?.steps || 0;
-  const todaySleep = todaySummary?.sleep_hours || 0;
+  const todayCalories = Math.round(todaySummary?.total_calories || 0);
+  const todayProtein = Math.round((todaySummary?.total_protein || 0) * 10) / 10;
+  const todayFiber = Math.round((todaySummary?.total_fiber || 0) * 10) / 10;
+  const todayWater = Math.round(todaySummary?.water_ml || 0);
+  const todaySteps = Math.round(todaySummary?.steps || 0);
+  const todaySleep = Math.round((todaySummary?.sleep_hours || 0) * 10) / 10;
   const workoutCompleted = !!todaySummary?.workout_completed;
 
   // Calculate stats

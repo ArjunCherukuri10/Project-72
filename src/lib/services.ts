@@ -637,11 +637,11 @@ export const trackerService = {
     });
 
     await trackerService.updateDailySummaryField(date, {
-      total_calories: totalCalories,
-      total_protein: totalProtein,
-      total_carbs: totalCarbs,
-      total_fat: totalFat,
-      total_fiber: totalFiber,
+      total_calories: Math.round(totalCalories),
+      total_protein: Math.round(totalProtein * 10) / 10,
+      total_carbs: Math.round(totalCarbs * 10) / 10,
+      total_fat: Math.round(totalFat * 10) / 10,
+      total_fiber: Math.round(totalFiber * 10) / 10,
     });
   },
 

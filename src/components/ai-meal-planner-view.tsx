@@ -71,11 +71,11 @@ export default function AIMealPlannerView() {
     mutationFn: async ({ meal, type }: { meal: any; type: string }) => {
       const dateStr = new Date().toISOString().split("T")[0];
       return trackerService.addMealItem(dateStr, type as any, "custom", 1, {
-        calories: meal.macros.calories,
-        protein: meal.macros.protein,
-        carbs: meal.macros.carbs,
-        fat: meal.macros.fat,
-        fiber: meal.macros.fiber,
+        calories: Math.round(meal.macros.calories || 0),
+        protein: Math.round((meal.macros.protein || 0) * 10) / 10,
+        carbs: Math.round((meal.macros.carbs || 0) * 10) / 10,
+        fat: Math.round((meal.macros.fat || 0) * 10) / 10,
+        fiber: Math.round((meal.macros.fiber || 0) * 10) / 10,
         food: { name: meal.description }
       });
     },

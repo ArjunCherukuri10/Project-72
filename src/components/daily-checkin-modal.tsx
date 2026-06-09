@@ -41,12 +41,12 @@ export default function DailyCheckinModal({ open, onOpenChange, currentDateStr }
         const summary = await trackerService.getDailySummary(currentDateStr);
         if (!isMounted) return;
         if (summary) {
-          setWeight(summary.weight ? summary.weight.toString() : "");
-          setCalories(summary.total_calories ? summary.total_calories.toString() : "");
-          setProtein(summary.total_protein ? summary.total_protein.toString() : "");
+          setWeight(summary.weight ? (Math.round(summary.weight * 100) / 100).toString() : "");
+          setCalories(summary.total_calories ? Math.round(summary.total_calories).toString() : "");
+          setProtein(summary.total_protein ? (Math.round(summary.total_protein * 10) / 10).toString() : "");
           setWater(summary.water_ml || 0);
-          setSteps(summary.steps ? summary.steps.toString() : "");
-          setSleep(summary.sleep_hours ? summary.sleep_hours.toString() : "");
+          setSteps(summary.steps ? Math.round(summary.steps).toString() : "");
+          setSleep(summary.sleep_hours ? (Math.round(summary.sleep_hours * 10) / 10).toString() : "");
           setWorkoutCompleted(!!summary.workout_completed);
           setMood(summary.mood || 3);
           setEnergy(summary.energy_level || 3);

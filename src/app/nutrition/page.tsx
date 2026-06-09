@@ -287,7 +287,7 @@ export default function NutritionPage() {
                 color === "teal" ? "text-teal-400" :
                 "text-emerald-400"
               }`}>
-                {cur[key]} / {tgt[key]}
+                {key === "cal" ? Math.round(cur[key]) : Math.round(cur[key] * 10) / 10} / {tgt[key]}
                 {key === "cal" ? " kcal" : "g"}
               </p>
               <Progress
@@ -514,8 +514,8 @@ export default function NutritionPage() {
                               </span>
                             </div>
                             <div className="flex items-center gap-2">
-                              <span className="text-white/50">{item.calories} kcal</span>
-                              <span className="text-pink-400">{item.protein}g P</span>
+                              <span className="text-white/50">{Math.round(item.calories || 0)} kcal</span>
+                              <span className="text-pink-400">{Math.round((item.protein || 0) * 10) / 10}g P</span>
                               <button
                                 onClick={() => deleteMealMutation.mutate(item.id)}
                                 className="opacity-0 group-hover:opacity-100 p-1 rounded-lg hover:bg-red-500/20 text-red-400/60 hover:text-red-400 transition-all"
