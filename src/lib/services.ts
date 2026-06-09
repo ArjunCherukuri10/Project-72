@@ -1119,19 +1119,32 @@ export const trackerService = {
     if (uid) {
       const sb = getSupabase()!;
       // Build a flat exercises list from weekly_split if top-level exercises not provided
-      const exercises = plan.exercises || (plan.weekly_split || [])
-        .filter((d: any) => d.type !== "rest" && d.exercises)
-        .flatMap((d: any) => d.exercises.map((ex: any) => ({ ...ex, day: d.day, split: d.type })));
+      let exercises: any = plan.exercises;
+      if (!exercises || (Array.isArray(exercises) && exercises.length === 0)) {
+        try {
+          exercises = (plan.weekly_split || [])
+            .filter((d: any) => d && d.type !== "rest" && Array.isArray(d.exercises))
+            .flatMap((d: any) => d.exercises.map((ex: any) => ({ ...ex, day: d.day, split: d.type })));
+        } catch {
+          exercises = [];
+        }
+      }
+      // Ensure exercises is never null/undefined
+      if (!exercises) exercises = [];
 
-      const { data, error } = await sb.from("ai_workout_plans").upsert({
+      // First try to delete existing, then insert fresh (avoids upsert conflict issues)
+      await sb.from("ai_workout_plans").delete().eq("user_id", uid);
+      const { data, error } = await sb.from("ai_workout_plans").insert({
         user_id: uid,
-        split_name: plan.split_name,
-        weekly_split: plan.weekly_split,
+        split_name: plan.split_name || "Custom Split",
+        weekly_split: plan.weekly_split || [],
         exercises: exercises,
-        progression_guidance: plan.progression_guidance,
-        updated_at: new Date().toISOString()
+        progression_guidance: plan.progression_guidance || null,
       }).select().single();
-      if (error) throw error;
+      if (error) {
+        console.error("Error saving AI workout plan:", error);
+        throw error;
+      }
       return data;
     }
 
