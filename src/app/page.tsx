@@ -138,6 +138,27 @@ const weightLost = startingWeight - currentWeight;
   const totalLossNeeded = Math.abs(startingWeight - goalWeight);
   const lostSoFar = Math.abs(startingWeight - currentWeight);
   const lossPercentage = totalLossNeeded > 0 ? Math.min(100, Math.round((lostSoFar / totalLossNeeded) * 100)) : 0;
+  const greeting = useMemo(() => {
+    const hrs = new Date().getHours();
+    if (hrs < 12) return "Good morning";
+    if (hrs < 17) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  const formatDate = (dateStr?: string | null) => {
+    if (!dateStr) return "Not set";
+    try {
+      const parts = dateStr.split("-");
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+    } catch {
+      return dateStr;
+    }
+  };
 
   // Calculate compliance score out of 100
   const complianceScore = useMemo(() => {
@@ -277,9 +298,19 @@ const weightLost = startingWeight - currentWeight;
 
   return (
     <div className="space-y-8">
+      {/* Time-Based Welcome Greeting */}
+      <div className="flex flex-col gap-1 sm:gap-1.5 animate-in fade-in slide-in-from-top-4 duration-300">
+        <h2 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
+          {greeting}, {profile?.full_name || "User"}!
+        </h2>
+        <p className="text-white/60 text-xs sm:text-sm">
+          Welcome back to your health dashboard.
+        </p>
+      </div>
+
       {/* Target Progress Bar */}
-      <Card className="relative overflow-hidden border-white/[0.08] bg-gradient-to-br from-teal-500/10 via-transparent to-emerald-500/10">
-        <CardContent className="p-6 sm:p-8">
+      <Card className="relative overflow-hidden border-white/[0.08] bg-gradient-to-br from-teal-500/10 via-transparent to-emerald-500/10 animate-in fade-in duration-300">
+        <CardContent className="p-6 sm:p-8 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2">
               <h1 className="text-2xl font-extrabold tracking-tight text-white sm:text-3xl">
@@ -304,13 +335,39 @@ const weightLost = startingWeight - currentWeight;
               </div>
             </div>
           </div>
-          <div className="mt-6 space-y-2">
+          <div className="space-y-2">
             <div className="flex justify-between text-xs font-bold font-mono">
               <span className="text-white/40">{startingWeight}kg (Start)</span>
               <span className="text-teal-300 font-extrabold">{formatNumber(currentWeight)}kg (Now)</span>
               <span className="text-white/40">{goalWeight}kg (Goal)</span>
             </div>
             <Progress value={lossPercentage} className="h-2.5 bg-white/[0.04]" />
+          </div>
+
+          {/* User Target Date vs Recommended Date vs Estimated Date */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-white/[0.06] pt-5 text-xs">
+            <div className="p-3 rounded-xl bg-white/[0.01] border border-white/[0.03]">
+              <span className="text-white/40 block font-medium uppercase tracking-wider text-[10px]">Your Target Date</span>
+              <span className="text-white font-bold text-sm block mt-1">
+                {formatDate(profile?.target_date)}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-emerald-500/[0.02] border border-emerald-500/10">
+              <span className="text-emerald-500/50 block font-medium uppercase tracking-wider text-[10px]">Recommended Date</span>
+              <span className="text-emerald-400 font-bold text-sm block mt-1">
+                {formatDate(profile?.recommended_date)}
+              </span>
+            </div>
+            <div className="p-3 rounded-xl bg-teal-500/[0.02] border border-teal-500/10">
+              <span className="text-teal-500/50 block font-medium uppercase tracking-wider text-[10px]">Dynamic Estimate</span>
+              <span className="text-teal-400 font-bold text-sm block mt-1">
+                {estimatedGoalDateObj.toLocaleDateString("en-US", {
+                  month: "long",
+                  day: "numeric",
+                  year: "numeric",
+                })}
+              </span>
+            </div>
           </div>
         </CardContent>
       </Card>
