@@ -125,7 +125,42 @@ export const trackerService = {
       if (error) {
         console.error("Error getting profile:", error);
       }
-      return data;
+      if (data) {
+        return data;
+      }
+      // If profile is missing (e.g. signup trigger didn't run or local db sync issue),
+      // auto-create profile to avoid foreign key violations in other tables
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        const email = session?.user?.email || `user_${uid}@example.com`;
+        const fullName = session?.user?.user_metadata?.full_name || "";
+        const avatarUrl = session?.user?.user_metadata?.avatar_url || "";
+        
+        const newProfile = {
+          id: uid,
+          email,
+          full_name: fullName,
+          avatar_url: avatarUrl,
+          goal_weight: 72.00,
+          starting_weight: 94.00,
+          units: "metric",
+          theme: "dark",
+        };
+
+        const { data: inserted, error: insertError } = await sb
+          .from("profiles")
+          .insert(newProfile)
+          .select("*")
+          .maybeSingle();
+
+        if (insertError) {
+          console.error("Error auto-creating profile:", insertError);
+        } else if (inserted) {
+          return inserted;
+        }
+      } catch (e) {
+        console.error("Failed to auto-create profile:", e);
+      }
     }
     return getStorageItem<Profile | null>("p72_profile", null);
   },
