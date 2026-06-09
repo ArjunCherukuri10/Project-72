@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Link from "next/link";
+import Image from "next/image";
 import { Shield, Mail, Lock, Sparkles, ArrowRight } from "lucide-react";
 
 export default function LoginPage() {
@@ -76,8 +77,15 @@ export default function LoginPage() {
 
       <Card className="w-full max-w-md bg-white/[0.02] border-white/[0.08] backdrop-blur-xl relative z-10">
         <CardHeader className="text-center pb-2">
-          <div className="mx-auto h-12 w-12 rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-violet-500/20 mb-4">
-            <Shield className="h-6 w-6 text-white" />
+          <div className="mx-auto h-12 w-12 rounded-2xl overflow-hidden bg-white/5 border border-white/[0.08] flex items-center justify-center shadow-lg shadow-violet-500/10 mb-4">
+            <Image
+              src="/logo.png"
+              alt="Project 72 Logo"
+              width={48}
+              height={48}
+              className="object-contain"
+              priority
+            />
           </div>
           <CardTitle className="text-2xl font-bold tracking-tight bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
             Welcome to Project 72

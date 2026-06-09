@@ -116,6 +116,33 @@ export interface AIWorkoutPlan {
   updated_at: string;
 }
 
+export interface AICardioPlan {
+  id: string;
+  user_id: string;
+  plan_name: string;
+  weekly_split: any;
+  coaching_tips: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AIWorkoutAnalysis {
+  id: string;
+  user_id: string;
+  summary: string;
+  consistency_rating: string;
+  achievements: string[];
+  recommendations: Array<{
+    exercise: string;
+    current: string;
+    target: string;
+    coaching_tip: string;
+  }>;
+  general_coaching: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface AIMealPlan {
   id: string;
   user_id: string;

@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
-import { Dumbbell, Plus, Flame, Clock, Trash2, GripVertical, Sparkles, Edit2, Save, X } from "lucide-react";
+import { Dumbbell, Plus, Flame, Clock, Trash2, GripVertical, Sparkles, Edit2, Save, X, Activity } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIWorkoutPlannerView from "@/components/ai-workout-planner-view";
+import AIWorkoutAnalysisView from "@/components/ai-workout-analysis-view";
 import { useAppStore } from "@/stores/app-store";
 
 interface ExerciseEntry {
@@ -142,6 +143,10 @@ export default function WorkoutsPage() {
           <TabsTrigger value="ai" className="text-xs rounded-lg flex items-center gap-1 data-[state=active]:bg-teal-500 data-[state=active]:text-slate-900 data-[state=active]:font-semibold">
             <Sparkles className="h-3.5 w-3.5" />
             AI Workout Plan
+          </TabsTrigger>
+          <TabsTrigger value="analysis" className="text-xs rounded-lg flex items-center gap-1 data-[state=active]:bg-teal-500 data-[state=active]:text-slate-900 data-[state=active]:font-semibold">
+            <Activity className="h-3.5 w-3.5" />
+            Performance Analysis
           </TabsTrigger>
         </TabsList>
 
@@ -366,6 +371,10 @@ export default function WorkoutsPage() {
 
         <TabsContent value="ai">
           <AIWorkoutPlannerView />
+        </TabsContent>
+
+        <TabsContent value="analysis">
+          <AIWorkoutAnalysisView />
         </TabsContent>
       </Tabs>
 

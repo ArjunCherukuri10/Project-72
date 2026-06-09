@@ -24,7 +24,10 @@ import {
   Plus,
   CheckCircle,
   HelpCircle,
-  Loader2
+  Loader2,
+  Dumbbell,
+  HeartPulse,
+  Check
 } from "lucide-react";
 import {
   AreaChart,
@@ -75,6 +78,21 @@ export default function Dashboard() {
   const { data: summaries = [] } = useQuery({
     queryKey: ["dailySummaries"],
     queryFn: trackerService.getDailySummaries,
+  });
+
+  const { data: aiWorkoutPlan } = useQuery({
+    queryKey: ["aiWorkoutPlan"],
+    queryFn: trackerService.getAIWorkoutPlan,
+  });
+
+  const { data: aiCardioPlan } = useQuery({
+    queryKey: ["aiCardioPlan"],
+    queryFn: trackerService.getAICardioPlan,
+  });
+
+  const { data: cardioSessions = [] } = useQuery({
+    queryKey: ["cardioSessions"],
+    queryFn: trackerService.getCardioSessions,
   });
 
   // Automatically calculate target requirements
@@ -208,6 +226,94 @@ const weightLost = startingWeight - currentWeight;
       });
     }
   }, [complianceScore, todaySummary, todayStr]);
+
+  // AI Daily Coach Suggestions logic
+  const activeDayOfWeek = useMemo(() => {
+    try {
+      const parts = todayStr.split("-");
+      const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+      return d.toLocaleDateString("en-US", { weekday: "long" });
+    } catch {
+      return new Date().toLocaleDateString("en-US", { weekday: "long" });
+    }
+  }, [todayStr]);
+
+  const todayWorkout = useMemo(() => {
+    if (!aiWorkoutPlan?.weekly_split) return null;
+    return aiWorkoutPlan.weekly_split.find((w: any) => w.day === activeDayOfWeek) || null;
+  }, [aiWorkoutPlan, activeDayOfWeek]);
+
+  const todayCardio = useMemo(() => {
+    if (!aiCardioPlan?.weekly_split) return null;
+    return aiCardioPlan.weekly_split.find((c: any) => c.day === activeDayOfWeek) || null;
+  }, [aiCardioPlan, activeDayOfWeek]);
+
+  const cardioCompleted = useMemo(() => {
+    return cardioSessions.some((c: any) => c.date === todayStr);
+  }, [cardioSessions, todayStr]);
+
+  // Log Suggested Workout
+  const logRecommendedWorkoutMutation = useMutation({
+    mutationFn: async (workout: any) => {
+      const exerciseSummary = workout.exercises
+        .map((e: any) => `${e.name}: ${e.sets}×${e.reps}`)
+        .join(" | ");
+
+      return trackerService.addWorkoutSession({
+        name: workout.name,
+        type: workout.type,
+        date: todayStr,
+        duration_minutes: profile?.workout_duration_limit || 45,
+        notes: `AI Recommended ${workout.name}\nExercises:\n${exerciseSummary}`,
+        completed: true,
+        template_id: null
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["workouts"] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success("Suggested workout logged successfully!");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to log workout");
+    }
+  });
+
+  // Log Suggested Cardio
+  const logRecommendedCardioMutation = useMutation({
+    mutationFn: async (cardio: any) => {
+      const activityLower = (cardio.activity || "").toLowerCase();
+      let type: any = "custom";
+      if (activityLower.includes("walk")) type = "walking";
+      else if (activityLower.includes("run") || activityLower.includes("jog")) type = "running";
+      else if (activityLower.includes("cycl") || activityLower.includes("bike")) type = "cycling";
+      else if (activityLower.includes("treadmill")) type = "treadmill";
+      else if (activityLower.includes("stair") || activityLower.includes("climber")) type = "stair_climber";
+      else if (activityLower.includes("swim")) type = "swimming";
+
+      return trackerService.addCardioSession({
+        date: todayStr,
+        type,
+        duration_minutes: cardio.duration_minutes || 30,
+        distance_km: null,
+        calories_burned: cardio.target_calories || null,
+        avg_pace: null,
+        notes: `AI Recommended ${cardio.type} (${cardio.intensity})\nDescription: ${cardio.description}`
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["cardioSessions"] });
+      queryClient.invalidateQueries({ queryKey: ["dailySummaries"] });
+      toast.success("Suggested cardio logged successfully!");
+    },
+    onError: (err: any) => {
+      toast.error(err.message || "Failed to log cardio");
+    }
+  });
+
+  const isRestCardio = (c: any) => {
+    return !c || c.type?.toLowerCase().includes("rest") || c.activity?.toLowerCase().includes("none");
+  };
 
   // Save onboarding mutation
   const saveOnboardingMutation = useMutation({
@@ -415,6 +521,164 @@ const weightLost = startingWeight - currentWeight;
             </div>
             <p className="text-[10px] text-white/40 mt-1">Daily adherence index</p>
             <Progress value={complianceScore} className="h-1.5 bg-white/[0.04] w-full" />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI Coach Daily Recommendation Widget */}
+      <div className="grid gap-6 md:grid-cols-2 animate-in fade-in duration-300">
+        <Card className="bg-gradient-to-r from-violet-950/20 to-indigo-950/20 border-violet-500/20 text-white shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <Dumbbell className="h-24 w-24 text-violet-400" />
+          </div>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-violet-300">
+                <Sparkles className="h-4 w-4 text-violet-400" />
+                AI Suggested Workout
+              </CardTitle>
+              <CardDescription className="text-white/40 text-[11px] mt-0.5">
+                Based on your {aiWorkoutPlan ? aiWorkoutPlan.split_name : "active split"} for {activeDayOfWeek}
+              </CardDescription>
+            </div>
+            {todayWorkout && todayWorkout.type !== "rest" && !workoutCompleted && (
+              <Button
+                size="sm"
+                className="bg-violet-600 hover:bg-violet-500 text-xs font-semibold h-8"
+                onClick={() => logRecommendedWorkoutMutation.mutate(todayWorkout)}
+                disabled={logRecommendedWorkoutMutation.isPending}
+              >
+                {logRecommendedWorkoutMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                )}
+                Log Session
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {todayWorkout ? (
+              todayWorkout.type === "rest" ? (
+                <div className="flex items-center gap-3 py-2 text-emerald-400">
+                  <Check className="h-5 w-5 shrink-0" />
+                  <span className="text-xs font-semibold">Active Recovery / Rest Day scheduled today. Focus on mobility!</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.04]">
+                    <div>
+                      <span className="font-extrabold text-sm text-white block">{todayWorkout.name}</span>
+                      <span className="text-[10px] text-white/40 capitalize">Split: {todayWorkout.type} • {profile?.workout_duration_limit || 45} mins</span>
+                    </div>
+                    {workoutCompleted && (
+                      <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-xl font-bold flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Logged
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-white/50 space-y-1">
+                    <span className="font-bold text-[9px] uppercase tracking-wider text-white/30 block">Exercises scheduled:</span>
+                    <div className="flex flex-wrap gap-1">
+                      {todayWorkout.exercises?.slice(0, 4).map((ex: any, i: number) => (
+                        <span key={i} className="bg-violet-500/10 border border-violet-500/20 text-violet-300 px-2 py-0.5 rounded-lg text-[10px] font-medium">
+                          {ex.name} ({ex.sets}x{ex.reps})
+                        </span>
+                      ))}
+                      {todayWorkout.exercises?.length > 4 && (
+                        <span className="text-white/30 px-1 text-[10px] self-center">
+                          +{todayWorkout.exercises.length - 4} more
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="py-4 text-center">
+                <p className="text-xs text-white/40">No AI Workout Plan generated yet.</p>
+                <Button
+                  size="sm"
+                  variant="link"
+                  className="text-violet-400 hover:text-violet-300 text-xs font-semibold h-auto p-0 mt-1"
+                  onClick={() => window.location.href = "/workouts"}
+                >
+                  Create Workout Split &rarr;
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-gradient-to-r from-sky-950/20 to-indigo-950/20 border-sky-500/20 text-white shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 p-3 opacity-10">
+            <HeartPulse className="h-24 w-24 text-sky-400" />
+          </div>
+          <CardHeader className="pb-3 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-sm font-bold flex items-center gap-1.5 text-sky-300">
+                <Sparkles className="h-4 w-4 text-sky-400" />
+                AI Suggested Cardio
+              </CardTitle>
+              <CardDescription className="text-white/40 text-[11px] mt-0.5">
+                Based on your conditioning split for {activeDayOfWeek}
+              </CardDescription>
+            </div>
+            {todayCardio && !isRestCardio(todayCardio) && !cardioCompleted && (
+              <Button
+                size="sm"
+                className="bg-sky-600 hover:bg-sky-500 text-xs font-semibold h-8"
+                onClick={() => logRecommendedCardioMutation.mutate(todayCardio)}
+                disabled={logRecommendedCardioMutation.isPending}
+              >
+                {logRecommendedCardioMutation.isPending ? (
+                  <Loader2 className="h-3.5 w-3.5 mr-1 animate-spin" />
+                ) : (
+                  <Check className="h-3.5 w-3.5 mr-1" />
+                )}
+                Log Session
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {todayCardio ? (
+              isRestCardio(todayCardio) ? (
+                <div className="flex items-center gap-3 py-2 text-emerald-400">
+                  <Check className="h-5 w-5 shrink-0" />
+                  <span className="text-xs font-semibold">Active Recovery / Rest scheduled today. Let your heart rate settle.</span>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-white/[0.02] p-2.5 rounded-xl border border-white/[0.04]">
+                    <div>
+                      <span className="font-extrabold text-sm text-white block">{todayCardio.activity} Session</span>
+                      <span className="text-[10px] text-white/40 capitalize">Intensity: {todayCardio.type} ({todayCardio.intensity}) • {todayCardio.duration_minutes} mins</span>
+                    </div>
+                    {cardioCompleted && (
+                      <span className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-xl font-bold flex items-center gap-1">
+                        <Check className="h-3 w-3" /> Logged
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-[11px] text-white/70 leading-relaxed bg-white/[0.01] border border-white/[0.03] p-2 rounded-lg">
+                    <span className="font-bold text-[9px] uppercase tracking-wider text-white/30 block mb-0.5">Protocol:</span>
+                    {todayCardio.description}
+                  </div>
+                </div>
+              )
+            ) : (
+              <div className="py-4 text-center">
+                <p className="text-xs text-white/40">No AI Cardio Plan generated yet.</p>
+                <Button
+                  size="sm"
+                  variant="link"
+                  className="text-sky-400 hover:text-sky-300 text-xs font-semibold h-auto p-0 mt-1"
+                  onClick={() => window.location.href = "/cardio"}
+                >
+                  Create Cardio Plan &rarr;
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

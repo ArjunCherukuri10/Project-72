@@ -14,6 +14,8 @@ import {
   Milestone,
   NutritionTargets,
   AIWorkoutPlan,
+  AICardioPlan,
+  AIWorkoutAnalysis,
   AIMealPlan,
   WeeklyReview,
   Reminder,
@@ -687,7 +689,7 @@ export const trackerService = {
       "p72_workout_sessions", "p72_cardio_sessions",
       "p72_health_metrics", "p72_body_measurements",
       "p72_nutrition_targets", "p72_ai_workout_plan",
-      "p72_ai_meal_plan", "p72_weekly_reviews",
+      "p72_ai_cardio_plan", "p72_ai_workout_analysis", "p72_ai_meal_plan", "p72_weekly_reviews",
       "p72_reminders"
     ];
     keys.forEach((k) => localStorage.removeItem(k));
@@ -1140,6 +1142,40 @@ export const trackerService = {
     return updated;
   },
 
+  // AI Cardio Plans
+  getAICardioPlan: async (): Promise<AICardioPlan | null> => {
+    return getStorageItem<AICardioPlan | null>("p72_ai_cardio_plan", null);
+  },
+  saveAICardioPlan: async (plan: Omit<AICardioPlan, "id" | "user_id" | "created_at" | "updated_at">) => {
+    const current = getStorageItem<any>("p72_ai_cardio_plan", {});
+    const updated = {
+      id: current.id || `aic-${Date.now()}`,
+      user_id: "user-1",
+      ...plan,
+      created_at: current.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setStorageItem("p72_ai_cardio_plan", updated);
+    return updated;
+  },
+
+  // AI Workout Performance Analysis
+  getAIWorkoutAnalysis: async (): Promise<AIWorkoutAnalysis | null> => {
+    return getStorageItem<AIWorkoutAnalysis | null>("p72_ai_workout_analysis", null);
+  },
+  saveAIWorkoutAnalysis: async (analysis: Omit<AIWorkoutAnalysis, "id" | "user_id" | "created_at" | "updated_at">) => {
+    const current = getStorageItem<any>("p72_ai_workout_analysis", {});
+    const updated = {
+      id: current.id || `aia-${Date.now()}`,
+      user_id: "user-1",
+      ...analysis,
+      created_at: current.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    setStorageItem("p72_ai_workout_analysis", updated);
+    return updated;
+  },
+
   // AI Meal Plans
   getAIMealPlan: async (): Promise<AIMealPlan | null> => {
     const uid = await getUserId();
@@ -1344,7 +1380,7 @@ export const trackerService = {
       "p72_workout_sessions", "p72_cardio_sessions",
       "p72_health_metrics", "p72_body_measurements",
       "p72_nutrition_targets", "p72_ai_workout_plan",
-      "p72_ai_meal_plan", "p72_weekly_reviews",
+      "p72_ai_cardio_plan", "p72_ai_workout_analysis", "p72_ai_meal_plan", "p72_weekly_reviews",
       "p72_reminders",
     ];
     const data: Record<string, any> = {};

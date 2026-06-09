@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -113,8 +114,15 @@ export function Sidebar() {
         {/* Logo */}
         <div className="flex h-16 items-center justify-between px-4 border-b border-white/[0.06]">
           <Link href="/" className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-teal-400 to-emerald-600 shadow-lg shadow-teal-500/25">
-              <Flame className="h-5 w-5 text-white" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl overflow-hidden bg-white/5 border border-white/[0.08] shadow-md">
+              <Image
+                src="/logo.png"
+                alt="Project 72 Logo"
+                width={36}
+                height={36}
+                className="object-contain"
+                priority
+              />
             </div>
             {!sidebarCollapsed && (
               <motion.div
