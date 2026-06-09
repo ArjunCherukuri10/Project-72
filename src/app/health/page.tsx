@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Activity, Plus } from "lucide-react";
+import { useAppStore } from "@/stores/app-store";
 
 export default function HealthPage() {
   const queryClient = useQueryClient();
+  const { selectedDate } = useAppStore();
   const [metricType, setMetricType] = useState("resting_heart_rate");
   const [value, setValue] = useState("");
   const [unit, setUnit] = useState("bpm");
@@ -26,7 +28,7 @@ export default function HealthPage() {
     mutationFn: async () => {
       if (!value) throw new Error("Value is required");
       return trackerService.addHealthMetric({
-        date: new Date().toISOString().split("T")[0],
+        date: selectedDate,
         metric_type: metricType,
         value: parseFloat(value),
         unit,

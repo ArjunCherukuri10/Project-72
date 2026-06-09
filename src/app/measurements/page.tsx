@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { Ruler, Plus } from "lucide-react";
+import { useAppStore } from "@/stores/app-store";
 
 export default function BodyMeasurementsPage() {
   const queryClient = useQueryClient();
+  const { selectedDate } = useAppStore();
   const [waist, setWaist] = useState("");
   const [neck, setNeck] = useState("");
   const [chest, setChest] = useState("");
@@ -25,7 +27,7 @@ export default function BodyMeasurementsPage() {
       const record = {
         id: `bm-${Date.now()}`,
         user_id: "user-1",
-        date: new Date().toISOString().split("T")[0],
+        date: selectedDate,
         waist: waist ? parseFloat(waist) : null,
         neck: neck ? parseFloat(neck) : null,
         chest: chest ? parseFloat(chest) : null,

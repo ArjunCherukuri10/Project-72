@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Dumbbell, Plus, Flame, Clock, Trash2, GripVertical, Sparkles, Edit2, Save, X } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIWorkoutPlannerView from "@/components/ai-workout-planner-view";
+import { useAppStore } from "@/stores/app-store";
 
 interface ExerciseEntry {
   name: string;
@@ -21,6 +22,7 @@ interface ExerciseEntry {
 
 export default function WorkoutsPage() {
   const queryClient = useQueryClient();
+  const { selectedDate } = useAppStore();
   const [name, setName] = useState("");
   const [type, setType] = useState("push");
   const [duration, setDuration] = useState("");
@@ -67,7 +69,7 @@ export default function WorkoutsPage() {
       return trackerService.addWorkoutSession({
         name,
         type,
-        date: new Date().toISOString().split("T")[0],
+        date: selectedDate,
         duration_minutes: duration ? parseInt(duration) : null,
         notes: [exerciseSummary, notes].filter(Boolean).join("\n") || null,
         completed: true,

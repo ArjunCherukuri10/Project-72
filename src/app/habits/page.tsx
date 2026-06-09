@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { trackerService } from "@/lib/services";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,10 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Check, Flame, Trophy, Calendar } from "lucide-react";
+import { useAppStore } from "@/stores/app-store";
+import { Progress } from "@/components/ui/progress";
 
 export default function HabitsPage() {
   const queryClient = useQueryClient();
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const { selectedDate: date, setSelectedDate: setDate } = useAppStore();
 
   const { data: habits = [] } = useQuery({
     queryKey: ["habitDefinitions"],
@@ -76,12 +77,7 @@ export default function HabitsPage() {
               </span>
             </div>
 
-            <div className="h-2 w-full rounded-full bg-white/[0.06] overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-violet-500 to-indigo-500 rounded-full"
-                style={{ width: `${getCompletionPercentage()}%` }}
-              />
-            </div>
+            <Progress value={getCompletionPercentage()} className="h-2 bg-white/[0.04]" />
 
             <div className="grid grid-cols-2 gap-2 text-center">
               <div className="rounded-xl border border-white/[0.04] bg-white/[0.01] p-3">

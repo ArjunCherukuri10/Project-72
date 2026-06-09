@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { formatNumber, calculateBMI, getBMICategory, estimateGoalDate } from "@/lib/utils";
 import type { Profile } from "@/types";
+import { useAppStore } from "@/stores/app-store";
 import {
   Scale,
   TrendingDown,
@@ -44,7 +45,7 @@ import { toast } from "sonner";
 export default function Dashboard() {
   const queryClient = useQueryClient();
   const [checkinOpen, setCheckinOpen] = useState(false);
-  const todayStr = useMemo(() => new Date().toISOString().split("T")[0], []);
+  const { selectedDate: todayStr } = useAppStore();
 
   // Refresh weight & daily summaries each day (24h)
   useEffect(() => {
@@ -118,8 +119,11 @@ const weightLost = startingWeight - currentWeight;
   const bmi = calculateBMI(currentWeight, heightCm);
 
   // Dynamic estimated goal date based on rate
-  // Auto-open Daily Check‑in if there is no weight entry for today
+  // Auto-open Daily Check‑in if there is no weight entry for today, only if selected date is today
   useEffect(() => {
+    const realToday = new Date().toISOString().split("T")[0];
+    if (todayStr !== realToday) return;
+
     const hasToday = weightLogs.some((log) => log.date === todayStr);
     if (!hasToday && !checkinOpen) {
       setCheckinOpen(true);
@@ -335,76 +339,92 @@ const weightLost = startingWeight - currentWeight;
             <p className="text-[10px] text-white/40 mt-1">{getBMICategory(bmi)}</p>
           </CardContent>
         </Card>
-        <Card className="bg-white/[0.02] border-white/[0.06] relative overflow-hidden">
+        <Card className="bg-white/[0.02] border-white/[0.06] relative overflow-hidden flex flex-col justify-between">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-xs font-bold text-white/40 uppercase">Compliance Score</CardTitle>
             <Award className="h-4 w-4 text-teal-400 animate-pulse" />
           </CardHeader>
-          <CardContent>
+          <CardContent className="space-y-2">
             <div className="text-2xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-400 to-emerald-400">
               {complianceScore} / 100
             </div>
             <p className="text-[10px] text-white/40 mt-1">Daily adherence index</p>
+            <Progress value={complianceScore} className="h-1.5 bg-white/[0.04] w-full" />
           </CardContent>
         </Card>
       </div>
 
       {/* Daily Target Dashboard Cards */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <h3 className="text-base font-bold text-white flex items-center gap-1.5">
             <CheckCircle className="h-4 w-4 text-teal-400" />
             Daily Compliance Indicators
           </h3>
-          <span className="text-[10px] text-white/40 font-mono">Today: {todayStr}</span>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-white/40 font-mono">Date: {todayStr}</span>
+            <Button
+              onClick={() => setCheckinOpen(true)}
+              size="sm"
+              className="h-8 text-xs font-semibold shrink-0"
+            >
+              <Plus className="h-3.5 w-3.5 mr-1" /> Log Day Stats
+            </Button>
+          </div>
         </div>
         <div className="grid gap-4 grid-cols-2 md:grid-cols-3 lg:grid-cols-6">
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${Math.abs(todayCalories - tgt.cal)/tgt.cal <= 0.1 ? "border-amber-500/20 bg-amber-500/[0.01]" : ""}`}>
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all hover:border-amber-500/30 ${Math.abs(todayCalories - tgt.cal)/tgt.cal <= 0.1 ? "border-amber-500/20 bg-amber-500/[0.01]" : ""}`}>
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Apple className="h-5 w-5 text-amber-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Calories</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Calories</div>
               <div className="text-sm font-extrabold text-white">{todayCalories} / {tgt.cal}</div>
-              <span className="text-[9px] text-white/30 block">kcal</span>
+              <span className="text-[9px] text-white/30 block font-mono">kcal</span>
+              <Progress value={Math.min(100, (todayCalories / tgt.cal) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-amber-500" />
             </CardContent>
           </Card>
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todayProtein >= tgt.pro * 0.9 ? "border-pink-500/20 bg-pink-500/[0.01]" : ""}`}>
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all hover:border-pink-500/30 ${todayProtein >= tgt.pro * 0.9 ? "border-pink-500/20 bg-pink-500/[0.01]" : ""}`}>
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Flame className="h-5 w-5 text-pink-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Protein</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Protein</div>
               <div className="text-sm font-extrabold text-white">{todayProtein}g / {tgt.pro}g</div>
-              <span className="text-[9px] text-white/30 block">Grams</span>
+              <span className="text-[9px] text-white/30 block font-mono">Grams</span>
+              <Progress value={Math.min(100, (todayProtein / tgt.pro) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-pink-500" />
             </CardContent>
           </Card>
-          <Card className="bg-white/[0.02] border-white/[0.06]">
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className="bg-white/[0.02] border-white/[0.06] transition-all hover:border-emerald-500/30">
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Scale className="h-5 w-5 text-emerald-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Fiber</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Fiber</div>
               <div className="text-sm font-extrabold text-white">{todayFiber}g / {tgt.fib}g</div>
-              <span className="text-[9px] text-white/30 block">Grams</span>
+              <span className="text-[9px] text-white/30 block font-mono">Grams</span>
+              <Progress value={Math.min(100, (todayFiber / tgt.fib) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-emerald-500" />
             </CardContent>
           </Card>
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todayWater >= tgt.water ? "border-sky-500/20 bg-sky-500/[0.01]" : ""}`}>
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all hover:border-sky-500/30 ${todayWater >= tgt.water ? "border-sky-500/20 bg-sky-500/[0.01]" : ""}`}>
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Droplet className="h-5 w-5 text-sky-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Water</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Water</div>
               <div className="text-sm font-extrabold text-white">{todayWater}ml / {tgt.water}ml</div>
-              <span className="text-[9px] text-white/30 block">Liters</span>
+              <span className="text-[9px] text-white/30 block font-mono">Liters</span>
+              <Progress value={Math.min(100, (todayWater / tgt.water) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-sky-500" />
             </CardContent>
           </Card>
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todaySteps >= tgt.steps ? "border-indigo-500/20 bg-indigo-500/[0.01]" : ""}`}>
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all hover:border-indigo-500/30 ${todaySteps >= tgt.steps ? "border-indigo-500/20 bg-indigo-500/[0.01]" : ""}`}>
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Footprints className="h-5 w-5 text-indigo-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Steps</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Steps</div>
               <div className="text-sm font-extrabold text-white">{todaySteps} / {tgt.steps}</div>
-              <span className="text-[9px] text-white/30 block">Steps</span>
+              <span className="text-[9px] text-white/30 block font-mono">Steps</span>
+              <Progress value={Math.min(100, (todaySteps / tgt.steps) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-indigo-500" />
             </CardContent>
           </Card>
-          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all ${todaySleep >= tgt.sleep ? "border-teal-500/20 bg-teal-500/[0.01]" : ""}`}>
-            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-1">
+          <Card className={`bg-white/[0.02] border-white/[0.06] transition-all hover:border-teal-500/30 ${todaySleep >= tgt.sleep ? "border-teal-500/20 bg-teal-500/[0.01]" : ""}`}>
+            <CardContent className="p-4 flex flex-col items-center text-center justify-center space-y-2">
               <Moon className="h-5 w-5 text-teal-400" />
-              <div className="text-[10px] text-white/40 font-bold uppercase mt-1">Sleep</div>
+              <div className="text-[10px] text-white/40 font-bold uppercase">Sleep</div>
               <div className="text-sm font-extrabold text-white">{todaySleep}h / {tgt.sleep}h</div>
-              <span className="text-[9px] text-white/30 block">Hours</span>
+              <span className="text-[9px] text-white/30 block font-mono">Hours</span>
+              <Progress value={Math.min(100, (todaySleep / tgt.sleep) * 100)} className="h-1.5 bg-white/[0.04] w-full" indicatorClassName="bg-teal-500" />
             </CardContent>
           </Card>
         </div>

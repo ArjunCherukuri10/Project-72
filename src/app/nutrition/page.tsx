@@ -11,6 +11,8 @@ import { toast } from "sonner";
 import { Plus, UtensilsCrossed, Calendar, Search, Trash2, Sparkles, Loader2 } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import AIMealPlannerView from "@/components/ai-meal-planner-view";
+import { useAppStore } from "@/stores/app-store";
+import { Progress } from "@/components/ui/progress";
 
 interface AIFoodItem {
   name: string;
@@ -41,7 +43,7 @@ function isCountable(s: string): boolean {
 
 export default function NutritionPage() {
   const queryClient = useQueryClient();
-  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const { selectedDate: date, setSelectedDate: setDate } = useAppStore();
   const [selectedMeal, setSelectedMeal] = useState<"breakfast" | "lunch" | "dinner" | "snacks">("breakfast");
 
   // Mode: "ai" or "manual"
@@ -277,16 +279,27 @@ export default function NutritionPage() {
           <Card key={key} className="bg-white/[0.02]">
             <CardContent className="p-4 space-y-2">
               <p className="text-[10px] font-bold uppercase text-white/40">{label}</p>
-              <p className={`text-lg font-bold text-${color}-400`}>
+              <p className={`text-lg font-bold ${
+                color === "amber" ? "text-amber-400" :
+                color === "pink" ? "text-pink-400" :
+                color === "violet" ? "text-violet-400" :
+                color === "teal" ? "text-teal-400" :
+                "text-emerald-400"
+              }`}>
                 {cur[key]} / {tgt[key]}
                 {key === "cal" ? " kcal" : "g"}
               </p>
-              <div className="h-1.5 w-full rounded-full bg-white/[0.06] overflow-hidden">
-                <div
-                  className={`h-full bg-${color}-500 rounded-full`}
-                  style={{ width: `${Math.min(100, (cur[key] / tgt[key]) * 100)}%` }}
-                />
-              </div>
+              <Progress
+                value={Math.min(100, (cur[key] / tgt[key]) * 100)}
+                className="h-1.5 bg-white/[0.04]"
+                indicatorClassName={
+                  color === "amber" ? "bg-amber-500" :
+                  color === "pink" ? "bg-pink-500" :
+                  color === "violet" ? "bg-violet-500" :
+                  color === "teal" ? "bg-teal-500" :
+                  "bg-emerald-500"
+                }
+              />
             </CardContent>
           </Card>
         ))}

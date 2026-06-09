@@ -17,8 +17,12 @@ import {
 } from "date-fns";
 import { ChevronLeft, ChevronRight, Scale, Apple, CheckSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAppStore } from "@/stores/app-store";
+import { useRouter } from "next/navigation";
 
 export default function CalendarPage() {
+  const router = useRouter();
+  const { setSelectedDate } = useAppStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
   const { data: summaries = [] } = useQuery({
@@ -95,6 +99,10 @@ export default function CalendarPage() {
                 return (
                   <div
                     key={dateStr}
+                    onClick={() => {
+                      setSelectedDate(dateStr);
+                      router.push("/");
+                    }}
                     className={`aspect-square p-2 border rounded-xl flex flex-col justify-between cursor-pointer transition-all duration-200 ${getDayStatusColor(
                       dateStr
                     )}`}

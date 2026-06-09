@@ -10,11 +10,12 @@ import { Label } from "@/components/ui/label";
 import { formatNumber } from "@/lib/utils";
 import { toast } from "sonner";
 import { Scale, Calendar, Trash, Plus, Edit2, Save, X } from "lucide-react";
+import { useAppStore } from "@/stores/app-store";
 
 export default function WeightPage() {
   const queryClient = useQueryClient();
   const [weight, setWeight] = useState("");
-  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
+  const { selectedDate: date, setSelectedDate: setDate } = useAppStore();
   const [time, setTime] = useState("08:00");
   const [notes, setNotes] = useState("");
   const [now] = useState(() => new Date());

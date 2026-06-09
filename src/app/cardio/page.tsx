@@ -9,9 +9,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { HeartPulse, Plus, Clock, Edit2, Trash2, X } from "lucide-react";
+import { useAppStore } from "@/stores/app-store";
 
 export default function CardioPage() {
   const queryClient = useQueryClient();
+  const { selectedDate } = useAppStore();
   const [type, setType] = useState("running");
   const [duration, setDuration] = useState("");
   const [distance, setDistance] = useState("");
@@ -34,7 +36,7 @@ export default function CardioPage() {
     mutationFn: async () => {
       if (!duration) throw new Error("Duration is required");
       return trackerService.addCardioSession({
-        date: new Date().toISOString().split("T")[0],
+        date: selectedDate,
         type,
         duration_minutes: parseInt(duration),
         distance_km: distance ? parseFloat(distance) : null,
